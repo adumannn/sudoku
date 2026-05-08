@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { syncGuestGame } from "@/app/actions/sync-guest";
+import { safeLocal } from "@/lib/store/persist";
 
 export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const [email, setEmail] = useState("");
@@ -17,8 +19,39 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     const fn = mode === "signin" ? sb.auth.signInWithPassword.bind(sb.auth) : sb.auth.signUp.bind(sb.auth);
     const { error } = await fn({ email, password });
     setLoading(false);
-    if (error) setErr(error.message);
-    else window.location.href = "/";
+    if (error) {
+      setErr(error.message);
+    } else {
+      if (mode === "signup") {
+        const saved = safeLocal.get<{
+          givens?: number[];
+          board?: number[];
+          notes?: Record<string, number[]>;
+          difficulty?: string;
+          puzzleId?: string | null;
+          dailyDate?: string | null;
+          elapsed?: number;
+          errorsMade?: number;
+          hintsUsed?: number;
+          isComplete?: boolean;
+        }>("sudoku/game-v1");
+        if (saved?.givens && saved.board && saved.difficulty) {
+          await syncGuestGame({
+            givens: saved.givens.map((v) => v.toString()).join(""),
+            current: saved.board.map((v) => v.toString()).join(""),
+            notes: saved.notes ?? {},
+            difficulty: saved.difficulty,
+            puzzleId: saved.puzzleId ?? undefined,
+            dailyDate: saved.dailyDate ?? undefined,
+            elapsed: saved.elapsed ?? 0,
+            errors: saved.errorsMade ?? 0,
+            hints: saved.hintsUsed ?? 0,
+            complete: saved.isComplete ?? false,
+          }).catch(() => {});
+        }
+      }
+      window.location.href = "/";
+    }
   };
 
   const google = async () => {

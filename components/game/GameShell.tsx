@@ -12,7 +12,7 @@ import { saveGame } from "@/app/actions/save-game";
 
 interface Props {
   difficulty: Difficulty;
-  puzzle: { id: string; givens: string; solution: string };
+  puzzle: { id?: string; givens: string; solution: string };
   dailyDate?: string;
 }
 
@@ -48,7 +48,7 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
           Object.entries(notes).map(([k, v]) => [k, v as number[]])
         ),
         difficulty,
-        puzzleId: puzzle.id || undefined,
+        puzzleId: puzzle.id,
         dailyDate,
         elapsed,
         errors: errorsMade,

@@ -34,7 +34,7 @@ A modern Sudoku web app with daily challenges, leaderboard, and an AI coach.
 
 4. **Stripe** (test mode)
    - Create a product + price → `STRIPE_PRICE_ID_PRO`
-   - Copy keys to `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+   - Copy secret key to `STRIPE_SECRET_KEY`
 
 5. **Seed puzzles** (must run before the app is playable):
    ```bash

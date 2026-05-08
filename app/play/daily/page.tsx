@@ -16,7 +16,7 @@ export default async function Daily() {
   return (
     <GameShell
       difficulty={data.difficulty as Difficulty}
-      puzzle={{ id: "", givens: data.givens, solution: data.solution }}
+      puzzle={{ givens: data.givens, solution: data.solution }}
       dailyDate={date}
     />
   );

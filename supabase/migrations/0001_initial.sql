@@ -102,8 +102,8 @@ create policy games_owner_all on public.games for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Daily results: world-read for leaderboard.
--- No INSERT policy: only the service role (server-side /api/daily/submit route) may write,
--- after server-validating the solution and elapsed time against daily_puzzles.min_seconds.
+-- INSERT policy is added in 0003 (auth.uid() = user_id), with the server-side
+-- /api/daily/submit route validating the solution and min_seconds before insert.
 create policy daily_results_world_read on public.daily_results for select using (true);
 
 -- AI usage: users see/update own
