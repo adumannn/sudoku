@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { useGame } from "@/lib/store/game-store";
 import { formatTime } from "@/lib/utils";
+import { ScrollContextStrip } from "@/components/year-scroll/ScrollContextStrip";
+import type { SealEntry, YearSeries } from "@/lib/seal/types";
 
 export function WinModal() {
   const isComplete = useGame((s) => s.isComplete);
@@ -24,12 +26,39 @@ export function WinModal() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [series, setSeries] = useState<YearSeries | null>(null);
 
   useEffect(() => {
     if (!isComplete) return;
     const t = setTimeout(() => setOpen(true), 700);
     return () => clearTimeout(t);
   }, [isComplete]);
+
+  useEffect(() => {
+    if (!open || !dailyDate) return;
+    let cancelled = false;
+    fetch("/api/seal/year")
+      .then((r) => r.json())
+      .then((j) => { if (!cancelled) setSeries(j); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open, dailyDate]);
+
+  const contextWindow: SealEntry[] | null = (() => {
+    if (!series || !dailyDate) return null;
+    const i = series.seals.findIndex((s) => s.date === dailyDate);
+    if (i < 0) return null;
+    const out: SealEntry[] = [];
+    for (let j = -4; j <= 4; j++) {
+      const idx = i + j;
+      if (idx >= 0 && idx < series.seals.length) out.push(series.seals[idx]);
+    }
+    return out.length === 9 ? out : null;
+  })();
+
+  const filledCount = series?.seals.filter((s) => s.state === "filled" || s.state === "freeze").length ?? 0;
+  const totalDays = series?.seals.length ?? 365;
+  const todayKanji = series?.seals.find((s) => s.date === dailyDate)?.kanji ?? "完";
 
   const submit = async () => {
     if (!dailyDate) return;
@@ -62,13 +91,22 @@ export function WinModal() {
             <SealWash />
             <SealBurst />
             <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: 7 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="seal-stamp w-[88px] h-[88px] text-[48px] absolute inset-0"
+              initial={{ scale: 0.6, rotate: 0, opacity: 0, filter: "blur(4px)" }}
+              animate={{ scale: 1, rotate: 0, opacity: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.7, delay: 0.35, ease: "easeOut" }}
+              className="w-[88px] h-[88px] text-[48px] absolute inset-0 flex items-center justify-center mincho text-sumi leading-none"
             >
-              完
+              {todayKanji}
             </motion.div>
+            <motion.span
+              initial={{ opacity: 0, rotate: -20, scale: 1.6 }}
+              animate={{ opacity: 1, rotate: -6, scale: 1 }}
+              transition={{ duration: 0.6, delay: 1.1, ease: "easeOut" }}
+              className="absolute bottom-1 right-1 w-[22px] h-[22px] bg-vermillion text-bone rounded-full flex items-center justify-center text-[12px] font-semibold pointer-events-none"
+              aria-hidden
+            >
+              ✓
+            </motion.span>
           </div>
           <DialogTitle asChild>
             <h2 className="h-disp text-[56px] mt-6 leading-[0.96]">
@@ -86,6 +124,16 @@ export function WinModal() {
             <Stat label="errors" value={errorsMade} />
             <Stat label="hints" value={hintsUsed} />
           </div>
+
+          {contextWindow && dailyDate && (
+            <div className="mt-4 -mx-8">
+              <ScrollContextStrip
+                window={contextWindow}
+                filledCount={filledCount + 1}
+                totalDays={totalDays}
+              />
+            </div>
+          )}
 
           {dailyDate && !submitted && (
             <div className="space-y-3 mt-4 text-left">
