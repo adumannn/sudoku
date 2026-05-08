@@ -34,7 +34,7 @@ export async function UserMenu() {
         <DropdownMenuLabel className="text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/stats">Stats</Link>
+          <Link href="/profile">Profile</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/pro">Upgrade</Link>

@@ -65,7 +65,7 @@ export default async function Home() {
           {/* LEFT: Today's daily */}
           <div>
             <div className="eyebrow red">{dateString}</div>
-            <h1 className="h-disp text-[68px] sm:text-[88px] lg:text-[108px] mt-4 leading-[0.96]">
+            <h1 className="h-disp text-[clamp(48px,12vw,108px)] mt-4 leading-[0.96]">
               Today&rsquo;s
               <br />
               box.
@@ -99,16 +99,16 @@ export default async function Home() {
             <p className="mt-8 mono text-[10px] tracking-[0.2em] uppercase text-moss">
               global pace · today
             </p>
-            <div className="mt-2.5 flex flex-wrap gap-6">
+            <div className="mt-2.5 flex flex-wrap gap-x-8 gap-y-4">
               <div>
                 <div className="kdate-jp text-2xl font-semibold tnum">02:48</div>
                 <div className="txt-small">first solve · nurali, ала</div>
               </div>
-              <div className="border-l border-sumi pl-6">
+              <div className="sm:border-l sm:border-sumi sm:pl-6">
                 <div className="kdate-jp text-2xl font-semibold tnum">14:52</div>
                 <div className="txt-small">global median</div>
               </div>
-              <div className="border-l border-sumi pl-6">
+              <div className="sm:border-l sm:border-sumi sm:pl-6">
                 <div className="kdate-jp text-2xl font-semibold tnum">2,184</div>
                 <div className="txt-small">solving now</div>
               </div>
@@ -161,6 +161,7 @@ export default async function Home() {
                   </div>
                 ))}
                 <div className="text-center py-3.5 ital text-moss text-[14px]">
+                  <span className="text-vermillion mr-1">↘</span>
                   your name lands when you finish.
                 </div>
               </div>

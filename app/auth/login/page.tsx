@@ -15,7 +15,7 @@ export default function Login() {
           <div className="mincho font-semibold text-lg">Hako</div>
         </Link>
         <div className="my-12 lg:my-0">
-          <h2 className="h-disp text-[64px] sm:text-[80px] lg:text-[96px]">
+          <h2 className="h-disp text-[clamp(44px,11vw,96px)]">
             Welcome
             <br />
             back.
@@ -25,7 +25,7 @@ export default function Login() {
           </p>
         </div>
         <p className="mono text-[10px] tracking-[0.22em] text-moss uppercase">
-          — hako.app · since february · made in almaty
+          — hako.app
         </p>
       </div>
 

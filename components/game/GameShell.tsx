@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGame } from "@/lib/store/game-store";
 import { Difficulty } from "@/lib/sudoku/types";
 import { findConflicts } from "@/lib/sudoku/validate";
@@ -7,7 +7,7 @@ import { Board } from "./Board";
 import { NumberPad } from "./NumberPad";
 import { Timer } from "./Timer";
 import { WinModal } from "./WinModal";
-import { CoachPopover } from "./CoachPopover";
+import { CoachPopover, SenseiBody } from "./CoachPopover";
 import { Masthead } from "@/components/Masthead";
 import { saveGame } from "@/app/actions/save-game";
 
@@ -163,6 +163,22 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
   const seedFragment =
     (puzzle.id ?? "0000").slice(0, 4) + " · seed";
 
+  const [senseiOpen, setSenseiOpen] = useState(false);
+
+  useEffect(() => {
+    if (!senseiOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSenseiOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [senseiOpen]);
+
+  const onPauseToggle = () => {
+    if (running) pause();
+    else resumeTimer();
+  };
+
   return (
     <>
       <Masthead
@@ -170,9 +186,10 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
         gameTitle={titleSegment}
         timer={<Timer />}
         solvedCount={{ filled: stats.filled, total: 81 }}
+        onSensei={() => setSenseiOpen(true)}
       />
 
-      <main className="px-4 lg:px-14 py-8 lg:py-12 max-w-[1480px] mx-auto">
+      <main className="px-4 lg:px-14 py-8 lg:py-12 pb-[180px] lg:pb-12 max-w-[1480px] mx-auto">
         <div className="grid gap-12 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_360px] items-start">
           {/* LEFT: clock + status */}
           <aside className="hidden lg:block">
@@ -211,11 +228,11 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
           </aside>
 
           {/* CENTER: board */}
-          <div className="max-w-[640px] w-full mx-auto">
+          <div className="max-w-[min(100vw-32px,640px)] lg:max-w-[640px] w-full mx-auto">
             <Board />
 
-            {/* Keyboard shortcuts under board */}
-            <div className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-2 mono text-[10px] tracking-[0.18em] uppercase text-moss">
+            {/* Keyboard shortcuts under board (desktop only — mobile has the bottom rail) */}
+            <div className="hidden lg:flex mt-4 flex-wrap justify-between gap-x-4 gap-y-2 mono text-[10px] tracking-[0.18em] uppercase text-moss">
               <span>
                 <kbd className="kbd">1-9</kbd> place
               </span>
@@ -237,19 +254,56 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
             </div>
           </div>
 
-          {/* RIGHT: numpad + sensei */}
-          <aside>
+          {/* RIGHT (desktop only): numpad + sensei */}
+          <aside className="hidden lg:block">
             <NumberPad
               paused={!running && !isComplete}
-              onPause={() => {
-                if (running) pause();
-                else resumeTimer();
-              }}
+              onPause={onPauseToggle}
             />
             <CoachPopover />
           </aside>
         </div>
       </main>
+
+      {/* MOBILE: fixed bottom rail with numpad */}
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-bone border-t-[1.5px] border-sumi px-3 pt-2.5"
+        style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <NumberPad
+          variant="rail"
+          paused={!running && !isComplete}
+          onPause={onPauseToggle}
+        />
+      </div>
+
+      {/* MOBILE: sensei drawer */}
+      {senseiOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 flex flex-col">
+          <button
+            type="button"
+            aria-label="close sensei"
+            onClick={() => setSenseiOpen(false)}
+            className="flex-1 bg-sumi/40"
+          />
+          <div className="bg-sumi text-bone animate-in slide-in-from-bottom duration-200">
+            <div className="flex justify-between items-center px-5 pt-4">
+              <div className="mono text-[10px] tracking-[0.22em] uppercase text-bone/65">
+                sensei
+              </div>
+              <button
+                type="button"
+                onClick={() => setSenseiOpen(false)}
+                aria-label="close"
+                className="mono text-[11px] tracking-[0.22em] uppercase text-bone/65 hover:text-bone"
+              >
+                close ×
+              </button>
+            </div>
+            <SenseiBody compact />
+          </div>
+        </div>
+      )}
 
       <WinModal />
     </>

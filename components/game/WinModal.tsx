@@ -26,7 +26,9 @@ export function WinModal() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isComplete) setOpen(true);
+    if (!isComplete) return;
+    const t = setTimeout(() => setOpen(true), 700);
+    return () => clearTimeout(t);
   }, [isComplete]);
 
   const submit = async () => {
@@ -55,16 +57,19 @@ export function WinModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="relative overflow-hidden p-0 max-w-[480px] bg-bone border-2 border-sumi rounded-none">
-        <SealBurst />
         <div className="px-8 py-10 text-center relative">
-          <motion.div
-            initial={{ scale: 0, rotate: -20 }}
-            animate={{ scale: 1, rotate: 7 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="seal-stamp w-[88px] h-[88px] text-[48px] mx-auto"
-          >
-            完
-          </motion.div>
+          <div className="relative w-[88px] h-[88px] mx-auto">
+            <SealWash />
+            <SealBurst />
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 7 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="seal-stamp w-[88px] h-[88px] text-[48px] absolute inset-0"
+            >
+              完
+            </motion.div>
+          </div>
           <DialogTitle asChild>
             <h2 className="h-disp text-[56px] mt-6 leading-[0.96]">
               Solved.
@@ -152,26 +157,43 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** Subtle vermillion ink burst behind the seal */
+/** Subtle vermillion ink burst centered on the seal */
 function SealBurst() {
   const rays = Array.from({ length: 12 }, (_, i) => i);
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div className="pointer-events-none absolute inset-0">
       {rays.map((i) => {
         const angle = (i / rays.length) * Math.PI * 2;
         const distance = 60 + Math.random() * 30;
         const dx = Math.cos(angle) * distance;
-        const dy = Math.sin(angle) * distance - 100;
+        const dy = Math.sin(angle) * distance;
         return (
           <motion.span
             key={i}
-            className="absolute left-1/2 top-[140px] h-1 w-1 -translate-x-1/2 -translate-y-1/2 bg-vermillion rounded-full"
+            className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 bg-vermillion rounded-full"
             initial={{ x: 0, y: 0, opacity: 0.7, scale: 1 }}
             animate={{ x: dx, y: dy, opacity: 0, scale: 0.3 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
           />
         );
       })}
     </div>
+  );
+}
+
+/** Vermillion radial wash behind the seal */
+function SealWash() {
+  return (
+    <motion.div
+      aria-hidden
+      initial={{ opacity: 0, scale: 0.6 }}
+      animate={{ opacity: 1, scale: 1.6 }}
+      transition={{ duration: 0.2, delay: 0.1 }}
+      className="pointer-events-none absolute inset-0"
+      style={{
+        background:
+          "radial-gradient(closest-side, hsla(9 66% 46% / 0.18), transparent)",
+      }}
+    />
   );
 }

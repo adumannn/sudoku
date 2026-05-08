@@ -24,7 +24,7 @@ export default async function Pro() {
           <div className="seal-stamp w-[88px] h-[88px] text-[40px] mx-auto rotate-[7deg]">
             完
           </div>
-          <h1 className="h-disp text-[64px] text-bone mt-6">You&rsquo;re Pro.</h1>
+          <h1 className="h-disp text-[clamp(44px,9vw,64px)] text-bone mt-6">You&rsquo;re Pro.</h1>
           <p className="ital text-bone/60 mt-3 text-[18px]">
             Thanks for keeping the seal clean.
           </p>
@@ -60,7 +60,7 @@ export default async function Pro() {
       {/* Centered column */}
       <div className="max-w-[520px] mx-auto px-8 py-16 lg:py-24 text-center">
         <div className="eyebrow red">一 · one tier · one price</div>
-        <h2 className="h-disp text-[64px] md:text-[80px] mt-4 text-bone leading-[0.95]">
+        <h2 className="h-disp text-[clamp(48px,10vw,80px)] mt-4 text-bone leading-[0.95]">
           A quieter
           <br />
           box.

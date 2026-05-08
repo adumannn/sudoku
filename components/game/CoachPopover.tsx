@@ -2,12 +2,13 @@
 import { useState } from "react";
 import { useGame } from "@/lib/store/game-store";
 
-/**
- * Sensei panel — docked on the right rail under the numpad on desktop.
- * Renamed conceptually to match the Hako reference; export name preserved
- * so existing imports keep working.
- */
-export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
+interface SenseiBodyProps {
+  mode?: "ask" | "nudge";
+  /** When true, layout is tuned for the mobile drawer (denser, full-bleed). */
+  compact?: boolean;
+}
+
+export function SenseiBody({ mode = "ask", compact = false }: SenseiBodyProps) {
   const board = useGame((s) => s.board);
   const selected = useGame((s) => s.selected);
   const givens = useGame((s) => s.givens);
@@ -42,7 +43,7 @@ export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
         if (done) break;
         setText((t) => t + dec.decode(value));
       }
-    } catch (e) {
+    } catch {
       setText("Sensei is offline. Try again in a moment.");
     } finally {
       setBusy(false);
@@ -50,7 +51,6 @@ export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
     }
   };
 
-  // Simple keyword underline of digits (e.g., "7") with vermillion accent.
   const renderText = (raw: string) => {
     const parts = raw.split(/(\b\d\b)/g);
     return parts.map((p, i) =>
@@ -64,12 +64,14 @@ export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
     );
   };
 
+  const padding = compact ? "p-6" : "p-5";
+
   return (
-    <div className="bg-sumi text-bone p-5 mt-6">
+    <div className={`bg-sumi text-bone ${padding}`}>
       <div className="flex justify-between items-center mb-3.5">
         <div className="flex gap-2 items-center">
-          <div className="w-6 h-6 bg-vermillion text-bone flex items-center justify-center mincho font-bold text-[13px]">
-            先
+          <div className="w-6 h-6 bg-vermillion text-bone flex items-center justify-center mincho font-semibold text-[12px]">
+            S
           </div>
           <div className="mincho font-semibold text-[13px]">Sensei</div>
         </div>
@@ -79,6 +81,7 @@ export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
       </div>
       <p className="m-0 mincho text-[14px] leading-[1.55] min-h-[3.5rem]">
         {text ? renderText(text) : "—"}
+        {streaming && <span className="hako-blink">▊</span>}
       </p>
       <p className="mt-2 ital text-[13px] text-bone/65">
         Ask <em>nudge</em> instead and I won&rsquo;t say the answer.
@@ -102,6 +105,19 @@ export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
           ask again
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Sensei panel — docked on the right rail under the numpad on desktop.
+ * On mobile, the panel is hidden and the body is opened from a drawer
+ * triggered by the masthead's sensei button (see GameShell).
+ */
+export function CoachPopover({ mode = "ask" }: { mode?: "ask" | "nudge" }) {
+  return (
+    <div className="mt-6 hidden lg:block">
+      <SenseiBody mode={mode} />
     </div>
   );
 }

@@ -4,10 +4,17 @@ import { formatTime } from "@/lib/utils";
 import { kanjiNum } from "@/lib/kanji";
 import { Masthead } from "@/components/Masthead";
 import { Heatmap } from "@/components/stats/Heatmap";
+import { AchievementsLedger } from "@/components/profile/AchievementsLedger";
+import { AchievementStamp } from "@/components/profile/AchievementStamp";
+import {
+  computeStatuses,
+  DEMO_STATUSES,
+  type GameRow,
+} from "@/lib/achievements";
 
 export const dynamic = "force-dynamic";
 
-export default async function Stats() {
+export default async function Profile() {
   const sb = createServerClient();
   const {
     data: { user },
@@ -17,26 +24,23 @@ export default async function Stats() {
   const initial = user.email?.[0] ?? "·";
   const username = user.email?.split("@")[0] ?? "duman";
 
-  type GameRow = {
-    difficulty: string;
-    is_complete: boolean;
-    elapsed_seconds: number;
-    created_at: string;
-  };
   const { data: games } = await sb
     .from("games")
-    .select("difficulty,is_complete,elapsed_seconds,created_at")
+    .select(
+      "difficulty,is_complete,elapsed_seconds,errors_made,hints_used,daily_date,created_at",
+    )
     .eq("user_id", user.id);
 
   const all = (games ?? []) as GameRow[];
   const completed = all.filter((g) => g.is_complete);
-  const byDiff = (d: string) => completed.filter((g) => g.difficulty === d);
+  const byDiff = (d: string) =>
+    completed.filter((g) => g.difficulty === d);
   const avg = (xs: number[]) =>
     xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
   const best = (xs: number[]) => (xs.length ? Math.min(...xs) : 0);
 
   const days = new Set<string>(
-    completed.map((g) => g.created_at.slice(0, 10))
+    completed.map((g) => g.created_at.slice(0, 10)),
   );
   let streak = 0;
   const d = new Date();
@@ -45,7 +49,6 @@ export default async function Stats() {
     d.setUTCDate(d.getUTCDate() - 1);
   }
 
-  // Demo fallback values when there's no data yet
   const totals = {
     streak: streak || 22,
     bestStreak: 41,
@@ -54,8 +57,7 @@ export default async function Stats() {
     daily: completed.filter((g) => g.difficulty !== "casual").length || 142,
     casual: 44,
     expert: byDiff("expert").length || 8,
-    avgSecs:
-      avg(completed.map((g) => g.elapsed_seconds)) || 11 * 60 + 42,
+    avgSecs: avg(completed.map((g) => g.elapsed_seconds)) || 11 * 60 + 42,
   };
 
   const since = "6 february";
@@ -83,15 +85,27 @@ export default async function Stats() {
   const merged = (k: string) =>
     diffStats(k).count > 0 ? diffStats(k) : diffFallback[k];
 
+  const statuses = completed.length > 0 ? computeStatuses(all) : DEMO_STATUSES;
+  const earnedCount = statuses.filter((s) => s.earned).length;
+
+  const recentDaily = completed
+    .filter((g) => g.daily_date)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const recentMs = recentDaily?.elapsed_seconds ?? 462;
+  const recentLabel =
+    recentDaily?.daily_date ?? "0469 · 4 may · hard";
+  const recentNoHints = recentDaily ? recentDaily.hints_used === 0 : true;
+  const recentNoErrors = recentDaily ? recentDaily.errors_made === 0 : true;
+
   return (
     <>
-      <Masthead active="stats" initial={initial} streakDays={totals.streak} />
+      <Masthead active="profile" initial={initial} streakDays={totals.streak} />
 
       <main className="px-7 lg:px-14 py-12 lg:py-16 max-w-[1480px] mx-auto">
         <div className="eyebrow">
           {username} · since {since}
         </div>
-        <h1 className="h-disp text-[42px] sm:text-[54px] mt-2">
+        <h1 className="h-disp text-[clamp(36px,7vw,54px)] mt-2">
           A solver&rsquo;s ledger.
         </h1>
 
@@ -113,7 +127,8 @@ export default async function Stats() {
               {totals.solvedAll}
             </div>
             <div className="txt-small mt-2">
-              {totals.daily} daily · {totals.casual} casual · {totals.expert} expert
+              {totals.daily} daily · {totals.casual} casual ·{" "}
+              {totals.expert} expert
             </div>
           </div>
           <div className="md:pl-6 mt-6 md:mt-0">
@@ -140,7 +155,9 @@ export default async function Stats() {
               nov · dec · jan · feb · mar · apr · may
             </div>
           </div>
-          <Heatmap weeks={26} />
+          <div className="overflow-x-auto -mx-7 px-7 lg:mx-0 lg:px-0">
+            <Heatmap weeks={26} />
+          </div>
           <div className="mt-3.5 flex justify-between items-center mono text-[10px] tracking-[0.18em] uppercase text-moss">
             <span>
               {totals.missed} missed days · 2 ↻ catchups
@@ -173,8 +190,7 @@ export default async function Stats() {
                   <div className="kdate-jp text-2xl">{d.label}</div>
                   <div
                     className={
-                      "mincho font-semibold mt-2 leading-none text-[36px] lg:text-[42px] tnum " +
-                      (d.accent ? "" : "")
+                      "mincho font-semibold mt-2 leading-none text-[36px] lg:text-[42px] tnum"
                     }
                   >
                     {formatTime(stat.best)}
@@ -187,7 +203,8 @@ export default async function Stats() {
                         : "txt-small")
                     }
                   >
-                    avg {formatTime(Math.round(stat.avg))} · {stat.count} solved
+                    avg {formatTime(Math.round(stat.avg))} ·{" "}
+                    {stat.count} solved
                     {d.accent ? " · pro" : ""}
                   </div>
                 </div>
@@ -195,6 +212,75 @@ export default async function Stats() {
             })}
           </div>
         </div>
+
+        {/* Achievements section */}
+        <section className="mt-24">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-8 items-end border-b-[1.5px] border-sumi pb-[18px]">
+            <div>
+              <div className="mono text-[11px] tracking-[0.22em] uppercase text-moss">
+                § achievements
+              </div>
+              <h2 className="mincho font-medium text-[36px] leading-none -tracking-[0.01em] mt-2">
+                Achievements
+                <span className="text-vermillion ml-3.5 text-[0.7em] align-baseline">
+                  章
+                </span>
+              </h2>
+            </div>
+            <div className="ital text-moss text-[17px] leading-snug max-w-[54ch] justify-self-start self-end">
+              — twelve marks a serious solver might collect. Earned and locked
+              sit next to each other; two specials stay hidden until you find
+              them.
+            </div>
+            <div className="mono text-[10.5px] tracking-[0.18em] uppercase text-moss">
+              {earnedCount} of 12 · earned
+            </div>
+          </div>
+
+          {/* Inline mark preview — recent daily with stacked stamps */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center py-6 border-t border-sumi/14 border-b border-sumi/14">
+            <div>
+              <div className="ital text-[15px] text-moss mb-1">
+                Daily № {recentLabel}
+              </div>
+              <div className="mincho text-[18px] font-medium text-sumi leading-snug">
+                Solved in{" "}
+                <span className="text-vermillion font-semibold">
+                  {formatTime(recentMs)}
+                </span>
+                {recentNoHints && (
+                  <>
+                    {" "}&nbsp;·&nbsp; first solve of the day, no hints used.
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3.5">
+              <AchievementStamp glyph="初" size="small" title="first solve of day" />
+              {recentNoHints && (
+                <AchievementStamp glyph="無" size="small" title="no hints" />
+              )}
+              {recentNoErrors && recentMs < 600 && (
+                <AchievementStamp glyph="鋭" size="small" title="sharp · sub-10:00" />
+              )}
+            </div>
+          </div>
+          <p className="ital text-moss text-[14.5px] leading-snug mt-3.5 max-w-[80ch]">
+            — marks earned during a puzzle stack to the right of its ledger
+            row. Three is the visual cap; a fourth becomes a{" "}
+            <span className="mono text-[11px] tracking-[0.04em]">+1</span> mono
+            badge.
+          </p>
+
+          <div className="mt-9">
+            <AchievementsLedger statuses={statuses} />
+          </div>
+
+          <p className="ital text-moss text-[15px] leading-snug mt-8 max-w-[80ch]">
+            — twelve marks, no two characters share a shape; none collide with
+            the difficulty markers (易 中 難 極) or the daily seal (完).
+          </p>
+        </section>
       </main>
     </>
   );

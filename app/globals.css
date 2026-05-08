@@ -67,6 +67,13 @@
   select {
     font-size: 16px;
   }
+  *:focus {
+    outline: none;
+  }
+  *:focus-visible {
+    outline: 2px solid hsl(var(--vermillion));
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
@@ -234,6 +241,10 @@
     font-weight: 700;
     background: hsla(var(--hazard) / 0.1);
   }
+  .hako-cell:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px hsl(var(--vermillion));
+  }
 
   /* Numpad keys */
   .nk-d {
@@ -268,9 +279,28 @@
     top: 5px;
     right: 7px;
     font-family: var(--font-mono), monospace;
-    font-size: 9px;
+    font-size: 10px;
     color: hsl(var(--moss));
     font-weight: 400;
+  }
+  .nk-d .ct.warn {
+    color: hsl(var(--vermillion));
+    font-weight: 600;
+  }
+  .nk-d.hot .ct,
+  .nk-d.on .ct {
+    color: hsla(var(--bone) / 0.8);
+  }
+  .hako-blink {
+    display: inline-block;
+    animation: hako-blink 1s steps(1) infinite;
+    color: hsl(var(--vermillion));
+    margin-left: 2px;
+  }
+  @keyframes hako-blink {
+    50% {
+      opacity: 0;
+    }
   }
   .nk-d.done {
     background: hsl(var(--bone));
@@ -287,6 +317,18 @@
     background: hsl(var(--sumi));
     color: hsl(var(--bone));
     border-color: hsl(var(--sumi));
+  }
+  /* Mobile bottom-rail variant: shorter, no enforced aspect ratio */
+  .nk-d.nk-d-rail {
+    aspect-ratio: auto;
+    height: 48px;
+    font-size: 20px;
+    border-width: 1px;
+  }
+  .nk-d.nk-d-rail .ct {
+    top: 3px;
+    right: 4px;
+    font-size: 9px;
   }
 
   /* Pills & buttons */

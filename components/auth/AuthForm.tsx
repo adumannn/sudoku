@@ -8,13 +8,13 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const [email, setEmail] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const sb = createClient();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
     setLoading(true);
-    // OTP magic-link style (passwordless)
     const { error } = await sb.auth.signInWithOtp({
       email,
       options: {
@@ -27,8 +27,7 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
       return;
     }
     setErr(null);
-    // The app sends a magic link — show a confirmation
-    alert("Check your email for the magic link.");
+    setSent(true);
   };
 
   const google = async () => {
@@ -69,6 +68,37 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
 
   const heading = mode === "signin" ? "Continue." : "Begin one.";
   const eyebrow = mode === "signin" ? "log in" : "sign up";
+
+  if (sent) {
+    return (
+      <div>
+        <div className="eyebrow red">check your email</div>
+        <h3 className="h-disp text-[36px] mt-2">Magic link sent.</h3>
+        <div className="mt-9 border-[1.5px] border-sumi p-5 bg-paper flex gap-4 items-start">
+          <div className="seal-stamp w-9 h-9 text-[18px] shrink-0">完</div>
+          <div>
+            <div className="mincho font-semibold text-[15px] text-sumi">
+              {email}
+            </div>
+            <p className="ital text-moss text-[14px] mt-1.5 leading-snug">
+              The link works once and expires in 10 minutes. Check spam if it
+              hasn&rsquo;t arrived in a minute.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setSent(false);
+            setEmail("");
+          }}
+          className="mt-5 mono text-[10px] tracking-[0.22em] uppercase text-moss hover:text-vermillion"
+        >
+          ← use a different email
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
