@@ -1,7 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import { Sparkles, Palette, ShieldOff } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,43 +19,108 @@ export default async function Pro() {
 
   if (profile?.is_pro) {
     return (
-      <main className="container max-w-md py-12">
-        <h1 className="text-3xl font-bold mb-4">You're Pro</h1>
-        <p className="text-muted-foreground">Thanks for supporting the app.</p>
+      <main className="bg-seal text-bone min-h-screen flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <div className="seal-stamp w-[88px] h-[88px] text-[40px] mx-auto rotate-[7deg]">
+            完
+          </div>
+          <h1 className="h-disp text-[64px] text-bone mt-6">You&rsquo;re Pro.</h1>
+          <p className="ital text-bone/60 mt-3 text-[18px]">
+            Thanks for keeping the seal clean.
+          </p>
+          <Link
+            href="/"
+            className="btn-hako ghost mt-8 border-bone text-bone justify-center"
+          >
+            home
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="container max-w-md py-12">
-      <h1 className="text-3xl font-bold mb-2">Sudoku Pro</h1>
-      <p className="text-muted-foreground mb-6">$4.99 / month</p>
-      <ul className="space-y-3 mb-8">
-        <li className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 mt-0.5 text-primary" />
-          <div>
-            <div className="font-medium">Unlimited AI Coach</div>
-            <div className="text-sm text-muted-foreground">No daily cap on hints from Claude.</div>
+    <main className="bg-seal text-bone min-h-screen relative">
+      {/* Top bar */}
+      <div className="flex justify-between items-center px-8 py-5 border-b border-bone/10">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-vermillion text-bone flex items-center justify-center mincho font-bold text-[14px]">
+            箱
           </div>
-        </li>
-        <li className="flex items-start gap-3">
-          <Palette className="h-5 w-5 mt-0.5 text-primary" />
-          <div>
-            <div className="font-medium">Custom themes</div>
-            <div className="text-sm text-muted-foreground">Pick from extra accent colors.</div>
-          </div>
-        </li>
-        <li className="flex items-start gap-3">
-          <ShieldOff className="h-5 w-5 mt-0.5 text-primary" />
-          <div>
-            <div className="font-medium">Ad-free</div>
-            <div className="text-sm text-muted-foreground">Reserved placement only — no ads in v1.</div>
-          </div>
-        </li>
-      </ul>
-      <form action="/api/stripe/checkout" method="POST">
-        <Button type="submit" className="w-full">Upgrade</Button>
-      </form>
+          <div className="mincho font-semibold text-[16px]">Hako Pro</div>
+        </Link>
+        <Link
+          href="/"
+          className="mono text-[11px] tracking-[0.2em] text-bone/65 uppercase hover:text-bone"
+        >
+          close ×
+        </Link>
+      </div>
+
+      {/* Centered column */}
+      <div className="max-w-[520px] mx-auto px-8 py-16 lg:py-24 text-center">
+        <div className="eyebrow red">一 · one tier · one price</div>
+        <h2 className="h-disp text-[64px] md:text-[80px] mt-4 text-bone leading-[0.95]">
+          A quieter
+          <br />
+          box.
+        </h2>
+        <p className="ital text-bone/65 text-[18px] md:text-[20px] mt-4 leading-[1.45]">
+          Three things, no upsell ladder, no monthly drip.
+        </p>
+
+        <ul className="list-none p-0 mt-12 text-left">
+          <li className="pro-bn">
+            <div className="pro-bk">先</div>
+            <div>
+              <div className="pro-bt">The coach, unlimited.</div>
+              <div className="pro-bd">
+                Free tier: 3 nudges per puzzle. Pro: ask as many times as you
+                want.
+              </div>
+            </div>
+          </li>
+          <li className="pro-bn">
+            <div className="pro-bk">極</div>
+            <div>
+              <div className="pro-bt">Expert &amp; archive.</div>
+              <div className="pro-bd">
+                極 difficulty plus every past Daily, browsable by date.
+              </div>
+            </div>
+          </li>
+          <li className="pro-bn last">
+            <div className="pro-bk">完</div>
+            <div>
+              <div className="pro-bt">No ads, ever.</div>
+              <div className="pro-bd">
+                No interstitials between puzzles. The seal stays clean.
+              </div>
+            </div>
+          </li>
+        </ul>
+
+        <div className="mt-12 flex items-baseline justify-center gap-3.5 flex-wrap">
+          <span className="kdate-jp text-[48px] text-bone font-semibold">
+            $4
+          </span>
+          <span className="mono text-[12px] tracking-[0.2em] text-bone/65 uppercase">
+            / month · 月
+          </span>
+          <span className="ital text-bone/65 text-[15px] ml-2">
+            or $36 / year
+          </span>
+        </div>
+
+        <form action="/api/stripe/checkout" method="POST">
+          <button className="btn-hako red mt-6 w-full justify-between">
+            Begin Pro <span className="font-jakarta font-light text-lg">→</span>
+          </button>
+        </form>
+        <p className="text-[11px] text-bone/45 mt-3.5">
+          Cancel from settings, any time.
+        </p>
+      </div>
     </main>
   );
 }

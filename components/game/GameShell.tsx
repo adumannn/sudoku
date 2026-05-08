@@ -1,13 +1,14 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useGame } from "@/lib/store/game-store";
 import { Difficulty } from "@/lib/sudoku/types";
+import { findConflicts } from "@/lib/sudoku/validate";
 import { Board } from "./Board";
-import { Controls } from "./Controls";
 import { NumberPad } from "./NumberPad";
 import { Timer } from "./Timer";
 import { WinModal } from "./WinModal";
 import { CoachPopover } from "./CoachPopover";
+import { Masthead } from "@/components/Masthead";
 import { saveGame } from "@/app/actions/save-game";
 
 interface Props {
@@ -15,6 +16,13 @@ interface Props {
   puzzle: { id?: string; givens: string; solution: string };
   dailyDate?: string;
 }
+
+const DIFF_LABEL: Record<Difficulty, string> = {
+  easy: "易 Easy",
+  medium: "中 Medium",
+  hard: "難 Hard",
+  expert: "極 Expert",
+};
 
 export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
   const load = useGame((s) => s.load);
@@ -24,9 +32,18 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
   const undo = useGame((s) => s.undo);
   const redo = useGame((s) => s.redo);
   const select = useGame((s) => s.select);
+  const pause = useGame((s) => s.pause);
+  const resumeTimer = useGame((s) => s.resumeTimer);
+  const running = useGame((s) => s.running);
 
   useEffect(() => {
-    load({ difficulty, givens: puzzle.givens, solution: puzzle.solution, puzzleId: puzzle.id, dailyDate });
+    load({
+      difficulty,
+      givens: puzzle.givens,
+      solution: puzzle.solution,
+      puzzleId: puzzle.id,
+      dailyDate,
+    });
   }, [load, difficulty, puzzle.givens, puzzle.solution, puzzle.id, dailyDate]);
 
   const board = useGame((s) => s.board);
@@ -37,8 +54,16 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
   const errorsMade = useGame((s) => s.errorsMade);
   const hintsUsed = useGame((s) => s.hintsUsed);
 
+  // Counts of cells filled and conflicts
+  const stats = useMemo(() => {
+    const filled = board.filter((v) => v !== 0).length;
+    const conflicts = findConflicts(board).length;
+    const noteCount = Object.keys(notes).length;
+    return { filled, conflicts, noteCount };
+  }, [board, notes]);
+
+  // Save
   useEffect(() => {
-    // Skip the initial paint when the store hasn't been loaded yet
     if (!useGame.getState().difficulty) return;
     const t = setTimeout(() => {
       saveGame({
@@ -59,6 +84,7 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
     return () => clearTimeout(t);
   }, [board, notes, elapsed, isComplete, errorsMade, hintsUsed, givens, difficulty, puzzle.id, dailyDate]);
 
+  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = useGame.getState();
@@ -72,13 +98,42 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
         if (s.selected != null) setCell(s.selected, 0);
         return;
       }
-      if (e.key.toLowerCase() === "n") { toggleNoteMode(); return; }
-      if (e.key.toLowerCase() === "u" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey)) { e.preventDefault(); undo(); return; }
-      if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y") || ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "z")) { e.preventDefault(); redo(); return; }
+      if (e.key.toLowerCase() === "n") {
+        toggleNoteMode();
+        return;
+      }
+      if (
+        e.key.toLowerCase() === "z" &&
+        (e.metaKey || e.ctrlKey) &&
+        !e.shiftKey
+      ) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if (
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y") ||
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "z")
+      ) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+      if (e.key === " ") {
+        e.preventDefault();
+        if (running) pause();
+        else resumeTimer();
+        return;
+      }
       if (e.key.startsWith("Arrow")) {
-        if (s.selected == null) { select(40); return; }
-        const r = Math.floor(s.selected / 9), c = s.selected % 9;
-        let nr = r, nc = c;
+        if (s.selected == null) {
+          select(40);
+          return;
+        }
+        const r = Math.floor(s.selected / 9),
+          c = s.selected % 9;
+        let nr = r,
+          nc = c;
         if (e.key === "ArrowUp") nr = Math.max(0, r - 1);
         else if (e.key === "ArrowDown") nr = Math.min(8, r + 1);
         else if (e.key === "ArrowLeft") nc = Math.max(0, c - 1);
@@ -89,19 +144,138 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setCell, toggleNote, toggleNoteMode, undo, redo, select]);
+  }, [setCell, toggleNote, toggleNoteMode, undo, redo, select, pause, resumeTimer, running]);
+
+  const formatDailyTitle = (date: string) => {
+    const d = new Date(date);
+    const day = d.getUTCDate();
+    const month = d.toLocaleString("en-US", {
+      month: "short",
+      timeZone: "UTC",
+    });
+    const diffName = DIFF_LABEL[difficulty].split(" ")[1] ?? difficulty;
+    return `Daily № 0472 · ${day} ${month} · ${diffName}`;
+  };
+  const titleSegment = dailyDate
+    ? formatDailyTitle(dailyDate)
+    : DIFF_LABEL[difficulty];
+
+  const seedFragment =
+    (puzzle.id ?? "0000").slice(0, 4) + " · seed";
 
   return (
-    <main className="container max-w-md py-4 flex flex-col items-center">
-      <div className="w-full flex justify-between items-center mb-2">
-        <span className="text-sm capitalize text-muted-foreground">{difficulty}</span>
-        <Timer />
-      </div>
-      <Board />
-      <Controls />
-      <NumberPad />
-      <CoachPopover />
+    <>
+      <Masthead
+        variant="game"
+        gameTitle={titleSegment}
+        timer={<Timer />}
+        solvedCount={{ filled: stats.filled, total: 81 }}
+      />
+
+      <main className="px-4 lg:px-14 py-8 lg:py-12 max-w-[1480px] mx-auto">
+        <div className="grid gap-12 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_360px] items-start">
+          {/* LEFT: clock + status */}
+          <aside className="hidden lg:block">
+            <div className="eyebrow">today&rsquo;s box</div>
+            <Timer variant="display" className="mt-2" />
+            <p className="ital text-moss text-[16px] mt-2">
+              — pacing toward top quartile.
+            </p>
+
+            <div className="mt-9 border-t border-sumi pt-4 grid grid-cols-2 gap-4">
+              <Stat label="solved" value={`${stats.filled}/81`} />
+              <Stat
+                label="conflicts"
+                value={String(stats.conflicts)}
+                accent={stats.conflicts > 0}
+              />
+              <Stat label="hints used" value={String(hintsUsed)} />
+              <Stat label="notes" value={String(stats.noteCount)} />
+            </div>
+
+            <div className="mt-9 border-t border-sumi pt-4">
+              <div className="eyebrow mb-2.5">your seed</div>
+              <div className="mono text-[13px] text-moss">{seedFragment}</div>
+              <div className="mono text-[13px] text-moss mt-1">
+                {dailyDate ? `${dailyDate}` : difficulty} · {puzzle.id ?? "—"}
+              </div>
+              <button
+                className="btn-hako ghost mt-4 px-3.5 py-2 text-[12px]"
+                onClick={() =>
+                  navigator.clipboard?.writeText(puzzle.id ?? "no-seed")
+                }
+              >
+                copy seed
+              </button>
+            </div>
+          </aside>
+
+          {/* CENTER: board */}
+          <div className="max-w-[640px] w-full mx-auto">
+            <Board />
+
+            {/* Keyboard shortcuts under board */}
+            <div className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-2 mono text-[10px] tracking-[0.18em] uppercase text-moss">
+              <span>
+                <kbd className="kbd">1-9</kbd> place
+              </span>
+              <span>
+                <kbd className="kbd">N</kbd> notes
+              </span>
+              <span>
+                <kbd className="kbd">⌘Z</kbd> undo
+              </span>
+              <span>
+                <kbd className="kbd">⌫</kbd> erase
+              </span>
+              <span>
+                <kbd className="kbd">?</kbd> coach
+              </span>
+              <span>
+                <kbd className="kbd">␣</kbd> pause
+              </span>
+            </div>
+          </div>
+
+          {/* RIGHT: numpad + sensei */}
+          <aside>
+            <NumberPad
+              paused={!running && !isComplete}
+              onPause={() => {
+                if (running) pause();
+                else resumeTimer();
+              }}
+            />
+            <CoachPopover />
+          </aside>
+        </div>
+      </main>
+
       <WinModal />
-    </main>
+    </>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div>
+      <div className="eyebrow">{label}</div>
+      <div
+        className={
+          "kdate-jp text-2xl font-semibold mt-0.5 tnum " +
+          (accent ? "text-hazard" : "")
+        }
+      >
+        {value}
+      </div>
+    </div>
   );
 }

@@ -18,16 +18,17 @@ export function Board() {
   );
   const sel = selected != null ? rc(selected) : null;
   const selBox = selected != null ? boxOf(...rc(selected)) : -1;
+  const selectedValue = selected != null ? board[selected] : 0;
 
   return (
-    <div
-      role="grid"
-      className="grid grid-cols-9 grid-rows-9 aspect-square w-full max-w-md select-none border-2 border-foreground"
-    >
+    <div role="grid" className="hako-board">
       {board.map((v, i) => {
         const [r, c] = rc(i);
-        const peer = sel ? sel[0] === r || sel[1] === c || boxOf(r, c) === selBox : false;
-        const sameVal = sel && v && v === board[selected!];
+        const peer = sel
+          ? sel[0] === r || sel[1] === c || boxOf(r, c) === selBox
+          : false;
+        const sameVal =
+          !!selectedValue && v === selectedValue && i !== selected;
         return (
           <Cell
             key={i}
@@ -37,7 +38,7 @@ export function Board() {
             note={notes[i]}
             selected={selected === i}
             peer={peer}
-            sameVal={!!sameVal}
+            sameVal={sameVal}
             conflict={conflicts.has(i)}
             onSelect={() => select(i)}
           />

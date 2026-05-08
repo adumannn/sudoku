@@ -4,48 +4,458 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    /* Hako tokens — paper-and-ink, vermillion seal */
+    --bone: 41 38% 87%;        /* #ECE3D0 */
+    --rice: 41 51% 91%;        /* #F4ECDA */
+    --paper: 44 64% 93%;       /* #FAF4E2 */
+    --sumi: 30 16% 10%;        /* #1F1B16 */
+    --moss: 33 19% 33%;        /* #5C503D */
+    --moss-2: 38 16% 47%;      /* #8A7E68 */
+    --rule: 39 26% 70%;        /* #C7BCA1 */
+    --vermillion: 9 66% 46%;   /* #C2452A */
+    --vermillion-deep: 9 66% 33%;
+    --hazard: 11 70% 41%;      /* #B23A1F */
+    --seal: 32 17% 5%;         /* #0F0D0A */
+
+    /* shadcn-compatible aliases mapped onto Hako */
+    --background: var(--bone);
+    --foreground: var(--sumi);
+    --card: var(--paper);
+    --card-foreground: var(--sumi);
+    --popover: var(--paper);
+    --popover-foreground: var(--sumi);
+    --primary: var(--sumi);
+    --primary-foreground: var(--bone);
+    --secondary: var(--rice);
+    --secondary-foreground: var(--sumi);
+    --muted: var(--rice);
+    --muted-foreground: var(--moss);
+    --accent: var(--vermillion);
+    --accent-foreground: var(--bone);
+    --destructive: var(--hazard);
+    --destructive-foreground: var(--bone);
+    --border: var(--rule);
+    --input: var(--rule);
+    --ring: var(--sumi);
+    --radius: 0px;
   }
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
   }
-  body { @apply bg-background text-foreground; }
-  input, textarea, select { font-size: 16px; }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    background: hsl(var(--bone));
+    color: hsl(var(--sumi));
+    font-family: var(--font-jakarta), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    /* paper grain */
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.46  0 0 0 0 0.32  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  /* Display + utility classes mirroring the Hako desktop reference */
+  .h-disp {
+    font-family: var(--font-mincho), serif;
+    font-weight: 500;
+    line-height: 0.96;
+    letter-spacing: -0.01em;
+    color: hsl(var(--sumi));
+    margin: 0;
+  }
+  .kdate-jp {
+    font-family: var(--font-mincho), serif;
+    font-weight: 500;
+  }
+  .ital {
+    font-family: var(--font-cormorant), serif;
+    font-style: italic;
+  }
+  .mono {
+    font-family: var(--font-mono), monospace;
+  }
+  .mincho {
+    font-family: var(--font-mincho), serif;
+  }
+  .eyebrow {
+    font-family: var(--font-mono), monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: hsl(var(--moss));
+  }
+  .eyebrow.red {
+    color: hsl(var(--vermillion));
+  }
+  .tnum {
+    font-feature-settings: "tnum" 1;
+  }
+  .lnum {
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+  .txt-small {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: hsl(var(--moss));
+  }
+
+  /* Masthead — shared chrome */
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1.5px solid hsl(var(--sumi));
+    background: hsl(var(--bone));
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .masthead .stamp {
+    width: 32px;
+    height: 32px;
+    background: hsl(var(--vermillion));
+    color: hsl(var(--bone));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mincho), serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .masthead .name {
+    font-family: var(--font-mincho), serif;
+    font-weight: 600;
+    font-size: 18px;
+  }
+  .masthead nav a {
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: hsl(var(--moss));
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1.5px solid transparent;
+  }
+  .masthead nav a.on {
+    color: hsl(var(--sumi));
+    border-bottom-color: hsl(var(--vermillion));
+  }
+  .masthead .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: hsl(var(--moss));
+    color: hsl(var(--bone));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mincho), serif;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* Sudoku board reusable */
+  .hako-board {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    background: hsl(var(--paper));
+    box-shadow: inset 0 0 0 2px hsl(var(--sumi));
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  .hako-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 0.5px solid hsla(var(--sumi) / 0.22);
+    border-bottom: 0.5px solid hsla(var(--sumi) / 0.22);
+    font-family: var(--font-mincho), serif;
+    font-weight: 500;
+    font-size: clamp(20px, 3.4vw, 32px);
+    color: hsl(var(--sumi));
+    position: relative;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    background: transparent;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 80ms ease;
+  }
+  .hako-cell:nth-child(9n) {
+    border-right: none;
+  }
+  .hako-cell:nth-child(n + 73) {
+    border-bottom: none;
+  }
+  .hako-cell:nth-child(3n):not(:nth-child(9n)) {
+    border-right: 1.5px solid hsl(var(--sumi));
+  }
+  .hako-cell:nth-child(n + 19):nth-child(-n + 27),
+  .hako-cell:nth-child(n + 46):nth-child(-n + 54) {
+    border-bottom: 1.5px solid hsl(var(--sumi));
+  }
+  .hako-cell.given {
+    font-weight: 700;
+  }
+  .hako-cell.player {
+    color: hsl(var(--vermillion));
+  }
+  .hako-cell.peer {
+    background: hsla(var(--vermillion) / 0.06);
+  }
+  .hako-cell.same {
+    box-shadow: inset 0 -3px 0 hsl(var(--vermillion));
+  }
+  .hako-cell.selected {
+    background: hsl(var(--vermillion));
+    color: hsl(var(--bone));
+  }
+  .hako-cell.conflict {
+    color: hsl(var(--hazard));
+    font-weight: 700;
+    background: hsla(var(--hazard) / 0.1);
+  }
+
+  /* Numpad keys */
+  .nk-d {
+    aspect-ratio: 1 / 1;
+    border: 1.5px solid hsl(var(--sumi));
+    background: hsl(var(--paper));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mincho), serif;
+    font-weight: 600;
+    font-size: 24px;
+    color: hsl(var(--sumi));
+    position: relative;
+    cursor: pointer;
+    transition: background 80ms ease, color 80ms ease;
+  }
+  .nk-d:hover {
+    background: hsl(var(--rice));
+  }
+  .nk-d.ak {
+    font-family: var(--font-mono), monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    aspect-ratio: auto;
+    padding: 14px 0;
+    font-weight: 500;
+  }
+  .nk-d .ct {
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    font-family: var(--font-mono), monospace;
+    font-size: 9px;
+    color: hsl(var(--moss));
+    font-weight: 400;
+  }
+  .nk-d.done {
+    background: hsl(var(--bone));
+    color: hsl(var(--moss-2));
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .nk-d.hot {
+    background: hsl(var(--vermillion));
+    color: hsl(var(--bone));
+    border-color: hsl(var(--vermillion));
+  }
+  .nk-d.on {
+    background: hsl(var(--sumi));
+    color: hsl(var(--bone));
+    border-color: hsl(var(--sumi));
+  }
+
+  /* Pills & buttons */
+  .kpill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border: 1px solid hsl(var(--sumi));
+    font-family: var(--font-mincho), serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: hsl(var(--sumi));
+    background: transparent;
+    cursor: pointer;
+  }
+  .kpill.red {
+    background: hsl(var(--vermillion));
+    color: hsl(var(--bone));
+    border-color: hsl(var(--vermillion));
+  }
+  .kpill.outline {
+    background: transparent;
+  }
+  .btn-hako {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 22px;
+    background: hsl(var(--sumi));
+    color: hsl(var(--bone));
+    font-family: var(--font-mincho), serif;
+    font-weight: 500;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 100ms ease;
+  }
+  .btn-hako:hover {
+    opacity: 0.9;
+  }
+  .btn-hako.red {
+    background: hsl(var(--vermillion));
+  }
+  .btn-hako.ghost {
+    background: transparent;
+    color: hsl(var(--sumi));
+    border: 1.5px solid hsl(var(--sumi));
+  }
+
+  /* Ledger row */
+  .led-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 80px 100px 220px;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid hsla(var(--sumi) / 0.12);
+    align-items: center;
+  }
+  .led-row.hd {
+    font-family: var(--font-mono), monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: hsl(var(--moss));
+    padding: 10px 0;
+    border-bottom: 1px solid hsl(var(--sumi));
+  }
+  .led-row.you {
+    padding: 16px 14px;
+    margin: 0 -14px;
+  }
+  .led-row.top1 {
+    background: hsla(var(--vermillion) / 0.05);
+  }
+
+  /* City rail */
+  .city-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px 9px 0;
+    border-bottom: 1px solid hsla(var(--sumi) / 0.1);
+    font-size: 14px;
+    color: hsl(var(--sumi));
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .city-row.on {
+    background: hsl(var(--vermillion));
+    color: hsl(var(--bone));
+    padding-left: 12px;
+    border-bottom-color: transparent;
+  }
+  .city-row.on .ct {
+    color: hsla(var(--bone) / 0.8);
+  }
+  .city-row .city-name {
+    font-family: var(--font-mincho), serif;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .city-row .ct {
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    color: hsl(var(--moss));
+    letter-spacing: 0.04em;
+  }
+
+  /* Pro feature row */
+  .pro-bn {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 18px;
+    align-items: start;
+    padding: 20px 0;
+    border-top: 1px solid hsla(var(--bone) / 0.18);
+  }
+  .pro-bn.last {
+    border-bottom: 1px solid hsla(var(--bone) / 0.18);
+  }
+  .pro-bk {
+    font-family: var(--font-mincho), serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: hsl(var(--vermillion));
+    line-height: 1;
+  }
+  .pro-bt {
+    font-family: var(--font-mincho), serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: hsl(var(--bone));
+  }
+  .pro-bd {
+    font-size: 13.5px;
+    color: hsl(var(--moss-2));
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+
+  /* Keyboard glyph under board */
+  .kbd {
+    font-family: var(--font-mono), monospace;
+    border: 1px solid hsl(var(--sumi));
+    padding: 2px 6px;
+    color: hsl(var(--sumi));
+    font-size: 10px;
+  }
+}
+
+/* small screens — 1024 collapse */
+@media (max-width: 1024px) {
+  .led-row {
+    grid-template-columns: 40px 1fr 80px 60px;
+  }
+  .led-row .col-hide-md {
+    display: none;
+  }
+}
+
+/* Print of seal kanji as decoration with subtle rotation */
+.seal-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--vermillion));
+  color: hsl(var(--bone));
+  font-family: var(--font-mincho), serif;
+  font-weight: 800;
 }

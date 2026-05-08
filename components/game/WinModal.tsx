@@ -5,12 +5,8 @@ import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useGame } from "@/lib/store/game-store";
 import { formatTime } from "@/lib/utils";
 
@@ -58,55 +54,88 @@ export function WinModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="relative overflow-hidden">
-        <Confetti />
-        <DialogHeader>
-          <DialogTitle>Solved!</DialogTitle>
-          <DialogDescription>
-            {dailyDate ? `Daily Challenge — ${dailyDate}` : `${difficulty} puzzle complete.`}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-3 gap-3 py-2 text-center">
-          <Stat label="Time" value={formatTime(elapsed)} />
-          <Stat label="Errors" value={errorsMade} />
-          <Stat label="Hints" value={hintsUsed} />
-        </div>
-        {dailyDate && !submitted && (
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-              />
-              Share my city on the leaderboard
-            </label>
-            {error && <div className="text-destructive text-sm">{error}</div>}
+      <DialogContent className="relative overflow-hidden p-0 max-w-[480px] bg-bone border-2 border-sumi rounded-none">
+        <SealBurst />
+        <div className="px-8 py-10 text-center relative">
+          <motion.div
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 7 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="seal-stamp w-[88px] h-[88px] text-[48px] mx-auto"
+          >
+            完
+          </motion.div>
+          <DialogTitle asChild>
+            <h2 className="h-disp text-[56px] mt-6 leading-[0.96]">
+              Solved.
+            </h2>
+          </DialogTitle>
+          <p className="ital text-moss text-[18px] mt-3">
+            {dailyDate
+              ? `Daily № 0472 · ${dailyDate}`
+              : `${difficulty ?? "casual"} box closed.`}
+          </p>
+
+          <div className="grid grid-cols-3 gap-2 py-6 mt-4 border-t border-b border-sumi">
+            <Stat label="time" value={formatTime(elapsed)} />
+            <Stat label="errors" value={errorsMade} />
+            <Stat label="hints" value={hintsUsed} />
           </div>
-        )}
-        {dailyDate && submitted && (
-          <div className="text-sm text-center text-muted-foreground">
-            Submitted!{" "}
-            <Link href="/leaderboard" className="underline">
-              View leaderboard
-            </Link>
-          </div>
-        )}
-        <DialogFooter>
-          <Link href="/" className="w-full">
-            <Button variant="outline" className="w-full">Home</Button>
-          </Link>
+
           {dailyDate && !submitted && (
-            <Button className="w-full" onClick={submit} disabled={submitting}>
-              {submitting ? "Submitting…" : "Submit time"}
-            </Button>
+            <div className="space-y-3 mt-4 text-left">
+              <label className="flex items-center gap-2 text-[13px] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  className="h-4 w-4 accent-vermillion"
+                />
+                <span>Share my city on the ledger</span>
+              </label>
+              {error && (
+                <div className="text-hazard text-[13px] mono uppercase tracking-wider">
+                  {error}
+                </div>
+              )}
+            </div>
           )}
-          {!dailyDate && difficulty && (
-            <Link href={`/play/${difficulty}`} className="w-full">
-              <Button className="w-full">Play another</Button>
+
+          {dailyDate && submitted && (
+            <div className="text-[14px] text-center text-moss mt-4 ital">
+              submitted ·{" "}
+              <Link href="/leaderboard" className="underline text-vermillion">
+                view ledger
+              </Link>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 mt-6">
+            <Link
+              href="/"
+              className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
+            >
+              home
             </Link>
-          )}
-        </DialogFooter>
+            {dailyDate && !submitted && (
+              <button
+                className="btn-hako red justify-center font-mincho text-[14px] py-3"
+                onClick={submit}
+                disabled={submitting}
+              >
+                {submitting ? "submitting…" : "submit time"}
+              </button>
+            )}
+            {!dailyDate && difficulty && (
+              <Link
+                href={`/play/${difficulty}`}
+                className="btn-hako red justify-center font-mincho text-[14px] py-3"
+              >
+                play another
+              </Link>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -114,30 +143,32 @@ export function WinModal() {
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-md border p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-xl font-semibold">{value}</div>
+    <div>
+      <div className="eyebrow">{label}</div>
+      <div className="kdate-jp text-[28px] font-semibold mt-1 tnum">
+        {value}
+      </div>
     </div>
   );
 }
 
-function Confetti() {
-  const dots = Array.from({ length: 24 }, (_, i) => i);
+/** Subtle vermillion ink burst behind the seal */
+function SealBurst() {
+  const rays = Array.from({ length: 12 }, (_, i) => i);
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {dots.map((i) => {
-        const angle = (i / dots.length) * Math.PI * 2;
-        const distance = 80 + Math.random() * 40;
+      {rays.map((i) => {
+        const angle = (i / rays.length) * Math.PI * 2;
+        const distance = 60 + Math.random() * 30;
         const dx = Math.cos(angle) * distance;
-        const dy = Math.sin(angle) * distance;
-        const colors = ["bg-primary", "bg-secondary-foreground", "bg-destructive", "bg-accent-foreground"];
+        const dy = Math.sin(angle) * distance - 100;
         return (
           <motion.span
             key={i}
-            className={`absolute left-1/2 top-1/2 h-2 w-2 rounded-full ${colors[i % colors.length]}`}
-            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-            animate={{ x: dx, y: dy, opacity: 0, scale: 0.4 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="absolute left-1/2 top-[140px] h-1 w-1 -translate-x-1/2 -translate-y-1/2 bg-vermillion rounded-full"
+            initial={{ x: 0, y: 0, opacity: 0.7, scale: 1 }}
+            animate={{ x: dx, y: dy, opacity: 0, scale: 0.3 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           />
         );
       })}
