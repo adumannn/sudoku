@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/AuthForm";
 
+export const dynamic = "force-dynamic";
+
 export default function Login() {
   return (
     <main className="container max-w-md py-12">

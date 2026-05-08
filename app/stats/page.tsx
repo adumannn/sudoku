@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function Stats() {
   const sb = createServerClient();
   const {

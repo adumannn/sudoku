@@ -3,6 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Palette, ShieldOff } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function Pro() {
   const sb = createServerClient();
   const {
