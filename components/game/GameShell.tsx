@@ -7,6 +7,7 @@ import { Controls } from "./Controls";
 import { NumberPad } from "./NumberPad";
 import { Timer } from "./Timer";
 import { WinModal } from "./WinModal";
+import { CoachPopover } from "./CoachPopover";
 import { saveGame } from "@/app/actions/save-game";
 
 interface Props {
@@ -99,6 +100,7 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
       <Board />
       <Controls />
       <NumberPad />
+      <CoachPopover />
       <WinModal />
     </main>
   );
