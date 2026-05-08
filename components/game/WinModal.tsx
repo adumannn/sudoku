@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +58,8 @@ export function WinModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="relative overflow-hidden">
+        <Confetti />
         <DialogHeader>
           <DialogTitle>Solved!</DialogTitle>
           <DialogDescription>
@@ -115,6 +117,30 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="rounded-md border p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function Confetti() {
+  const dots = Array.from({ length: 24 }, (_, i) => i);
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {dots.map((i) => {
+        const angle = (i / dots.length) * Math.PI * 2;
+        const distance = 80 + Math.random() * 40;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        const colors = ["bg-primary", "bg-secondary-foreground", "bg-destructive", "bg-accent-foreground"];
+        return (
+          <motion.span
+            key={i}
+            className={`absolute left-1/2 top-1/2 h-2 w-2 rounded-full ${colors[i % colors.length]}`}
+            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+            animate={{ x: dx, y: dy, opacity: 0, scale: 0.4 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+          />
+        );
+      })}
     </div>
   );
 }
