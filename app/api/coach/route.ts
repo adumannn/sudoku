@@ -1,3 +1,4 @@
+import { GoogleGenAI } from "@google/genai";
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { SYSTEM_PROMPT, userMessage } from "@/lib/coach/prompt";
@@ -5,7 +6,7 @@ import { checkAndIncrement } from "@/lib/coach/usage";
 
 export const runtime = "nodejs";
 
-const GROQ_MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
 export async function POST(req: NextRequest) {
   const sb = createServerClient();
@@ -31,63 +32,29 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(body.board) || body.board.length !== 81)
     return new Response("bad-request", { status: 400 });
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey)
-    return new Response("[error] GROQ_API_KEY not set", { status: 500 });
+    return new Response("[error] GOOGLE_API_KEY not set", { status: 500 });
 
-  const upstream = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        max_tokens: 400,
-        stream: true,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMessage(body.board, body.target) },
-        ],
-      }),
-    }
-  );
-
-  if (!upstream.ok || !upstream.body) {
-    const detail = await upstream.text().catch(() => "");
-    console.error("[coach] groq error:", upstream.status, detail);
-    return new Response(`[error] ${upstream.status} ${detail}`, { status: 502 });
-  }
-
+  const ai = new GoogleGenAI({ apiKey });
   const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
   const sse = new ReadableStream({
     async start(ctrl) {
-      const reader = upstream.body!.getReader();
-      let buf = "";
       try {
-        for (;;) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const lines = buf.split("\n");
-          buf = lines.pop() ?? "";
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data:")) continue;
-            const payload = trimmed.slice(5).trim();
-            if (payload === "[DONE]") return;
-            try {
-              const json = JSON.parse(payload);
-              const delta = json.choices?.[0]?.delta?.content;
-              if (delta) ctrl.enqueue(encoder.encode(delta));
-            } catch {}
-          }
+        const stream = await ai.models.generateContentStream({
+          model: GEMINI_MODEL,
+          contents: userMessage(body.board, body.target),
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            maxOutputTokens: 400,
+          },
+        });
+        for await (const chunk of stream) {
+          const text = chunk.text;
+          if (text) ctrl.enqueue(encoder.encode(text));
         }
       } catch (e) {
-        console.error("[coach] stream error:", e);
+        console.error("[coach] gemini error:", e);
         const msg = e instanceof Error ? e.message : String(e);
         ctrl.enqueue(encoder.encode(`\n[error] ${msg}`));
       } finally {
