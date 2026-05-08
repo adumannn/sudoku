@@ -7,6 +7,7 @@ import { Controls } from "./Controls";
 import { NumberPad } from "./NumberPad";
 import { Timer } from "./Timer";
 import { WinModal } from "./WinModal";
+import { saveGame } from "@/app/actions/save-game";
 
 interface Props {
   difficulty: Difficulty;
@@ -26,6 +27,36 @@ export function GameShell({ difficulty, puzzle, dailyDate }: Props) {
   useEffect(() => {
     load({ difficulty, givens: puzzle.givens, solution: puzzle.solution, puzzleId: puzzle.id, dailyDate });
   }, [load, difficulty, puzzle.givens, puzzle.solution, puzzle.id, dailyDate]);
+
+  const board = useGame((s) => s.board);
+  const notes = useGame((s) => s.notes);
+  const givens = useGame((s) => s.givens);
+  const elapsed = useGame((s) => s.elapsed);
+  const isComplete = useGame((s) => s.isComplete);
+  const errorsMade = useGame((s) => s.errorsMade);
+  const hintsUsed = useGame((s) => s.hintsUsed);
+
+  useEffect(() => {
+    // Skip the initial paint when the store hasn't been loaded yet
+    if (!useGame.getState().difficulty) return;
+    const t = setTimeout(() => {
+      saveGame({
+        givens: givens.map((v) => v.toString()).join(""),
+        current: board.map((v) => v.toString()).join(""),
+        notes: Object.fromEntries(
+          Object.entries(notes).map(([k, v]) => [k, v as number[]])
+        ),
+        difficulty,
+        puzzleId: puzzle.id || undefined,
+        dailyDate,
+        elapsed,
+        errors: errorsMade,
+        hints: hintsUsed,
+        complete: isComplete,
+      }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [board, notes, elapsed, isComplete, errorsMade, hintsUsed, givens, difficulty, puzzle.id, dailyDate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
