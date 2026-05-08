@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -19,19 +19,23 @@ export interface SenseiInput {
   meaning: string;
 }
 
-/** Generate a Sensei micro-line. Throws on API failure. */
+/** Generate a Sensei micro-line via Gemini 2.5 Flash. Throws on API failure. */
 export async function generateSenseiLine(input: SenseiInput): Promise<string> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) throw new Error("missing-api-key");
+  const ai = new GoogleGenAI({ apiKey });
   const userMessage = `Kanji: ${input.kanji} (${input.romaji}, "${input.meaning}").`;
-  const res = await client.messages.create({
-    model: "claude-haiku-4-5",
-    max_tokens: 80,
-    system: SENSEI_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
+  const res = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: userMessage,
+    config: {
+      systemInstruction: SENSEI_SYSTEM_PROMPT,
+      maxOutputTokens: 80,
+    },
   });
-  const block = res.content.find((c) => c.type === "text");
-  if (!block || block.type !== "text") throw new Error("no-text");
-  return block.text.trim().replace(/^["']|["']$/g, "");
+  const text = res.text;
+  if (!text) throw new Error("no-text");
+  return text.trim().replace(/^["']|["']$/g, "");
 }
 
 /** Read or write the cached line for a given date.
