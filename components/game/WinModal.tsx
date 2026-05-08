@@ -164,12 +164,20 @@ export function WinModal() {
           )}
 
           <div className="grid grid-cols-2 gap-2 mt-6">
-            <Link
-              href="/"
-              className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
-            >
-              home
-            </Link>
+            {dailyDate ? (
+              <a
+                href={`/api/share/seal/${dailyDate}`}
+                target="_blank"
+                rel="noopener"
+                className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
+              >
+                share
+              </a>
+            ) : (
+              <Link href="/" className="btn-hako ghost justify-center font-mincho text-[14px] py-3">
+                home
+              </Link>
+            )}
             {dailyDate && !submitted && (
               <button
                 className="btn-hako red justify-center font-mincho text-[14px] py-3"
@@ -178,6 +186,14 @@ export function WinModal() {
               >
                 {submitting ? "submitting…" : "submit time"}
               </button>
+            )}
+            {dailyDate && submitted && (
+              <Link
+                href="/"
+                className="btn-hako red justify-center font-mincho text-[14px] py-3"
+              >
+                tomorrow →
+              </Link>
             )}
             {!dailyDate && difficulty && (
               <Link
