@@ -17,7 +17,14 @@ describe("assignKanjiForRange", () => {
     expect(out[0].meaning.length).toBeGreaterThan(0);
   });
 
-  it.todo("never repeats within a 365-day window — bank must be extended to ≥365 entries before this becomes runnable");
+  it("never repeats within a 365-day window", () => {
+    const out = assignKanjiForRange("2026-01-01", 365);
+    const seen = new Set<string>();
+    for (const e of out) {
+      expect(seen.has(e.kanji)).toBe(false);
+      seen.add(e.kanji);
+    }
+  });
 
   it("is deterministic for the same input", () => {
     const a = assignKanjiForRange("2026-01-01", 30);
