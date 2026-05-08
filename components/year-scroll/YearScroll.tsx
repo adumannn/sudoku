@@ -96,7 +96,7 @@ function Row({
         {weekNumber % 4 === 1 ? `w${weekNumber.toString().padStart(2, "0")}` : ""}
       </div>
       {week.map((entry, di) => {
-        if (!entry) return <div key={di} aria-hidden />;
+        if (!entry) return <div key={`pad-${weekNumber}-${di}`} aria-hidden />;
         const isToday = entry.state === "today";
         return (
           <div key={entry.date} ref={isToday ? todayRef : undefined}>
