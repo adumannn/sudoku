@@ -233,7 +233,7 @@ function Footer() {
   return (
     <footer className="border-t border-sumi/15 mt-16 px-6 lg:px-12 py-8 max-w-[1480px] mx-auto">
       <div className="flex flex-col md:flex-row justify-between gap-6 mono text-[10px] tracking-[0.2em] uppercase text-moss">
-        <div>hako.app · since february · made in almaty</div>
+        <div>hako.app</div>
         <div>v1.0 · 8 may 2026</div>
       </div>
     </footer>

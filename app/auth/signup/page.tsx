@@ -24,7 +24,7 @@ export default function Signup() {
           </p>
         </div>
         <p className="mono text-[10px] tracking-[0.22em] text-moss uppercase">
-          — hako.app · since february · made in almaty
+          — hako.app · since february
         </p>
       </div>
 
