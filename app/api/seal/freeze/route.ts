@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "bad-date" }, { status: 400 });
   }
 
-  // 24-hour window: only allow applying a freeze to a date within the last 24h
+  // 24-hour window: target date must already have ended (ageHours >= 0,
+  // i.e. not today or future) and must not be more than 24h past
+  // (ageHours <= 24). Today is rejected because today's daily is still
+  // playable; the UI's freezePrompt only ever sends yesterday's date.
   const targetMs = Date.parse(body.date + "T23:59:59Z");
   const ageHours = (Date.now() - targetMs) / 1000 / 3600;
   if (ageHours < 0 || ageHours > 24) {
