@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "verify-generator": "tsx scripts/verify-generator.ts",
     "seed": "tsx scripts/seed-puzzles.ts",
+    "seed-seal": "tsx scripts/seed-seal-calendar.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -21,6 +22,7 @@
     "@radix-ui/react-toast": "^1.2.2",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.46.1",
+    "@vercel/og": "^0.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.17",

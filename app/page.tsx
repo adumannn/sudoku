@@ -1,8 +1,15 @@
+// app/page.tsx
 import Link from "next/link";
 import { Masthead } from "@/components/Masthead";
+import { TodayCard } from "@/components/year-scroll/TodayCard";
+import { YearScroll } from "@/components/year-scroll/YearScroll";
 import { createServerClient } from "@/lib/supabase/server";
-import { dateLine } from "@/lib/kanji";
 import { todayUTC } from "@/lib/utils";
+import { computeUnifiedStreak } from "@/lib/seal/streak";
+import { computeAllotment } from "@/lib/seal/freeze";
+import { assembleYearSeries } from "@/lib/seal/year";
+import { dateLine } from "@/lib/kanji";
+import type { YearSeries } from "@/lib/seal/types";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +37,94 @@ export default async function Home() {
     data: { session },
   } = await sb.auth.getSession();
   const user = session?.user;
-
   const initial = user?.email?.[0] ?? "·";
-  const dateString = dateLine();
   const today = todayUTC();
+  const year = parseInt(today.slice(0, 4), 10);
 
-  // pull a small ledger preview if present
+  // Today seal
+  const { data: todayCal } = await sb
+    .from("daily_seal_calendar")
+    .select("date,kanji,romaji,meaning")
+    .eq("date", today)
+    .maybeSingle();
+  const { data: todayLine } = await sb
+    .from("daily_seal_lines")
+    .select("line")
+    .eq("date", today)
+    .maybeSingle();
+  const todaySeal = todayCal
+    ? {
+        date: todayCal.date,
+        kanji: todayCal.kanji,
+        romaji: todayCal.romaji,
+        meaning: todayCal.meaning,
+        senseiLine: todayLine?.line ?? null,
+      }
+    : null;
+
+  // Year series + streak (signed-in only)
+  let series: YearSeries | null = null;
+  let streak = 0;
+  let completedTodayElapsed: number | undefined;
+  let freezePrompt: { date: string; kanji: string; remaining: number } | null = null;
+  if (user) {
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+    const [{ data: cal }, { data: results }, { data: freezes }, { data: profile }] =
+      await Promise.all([
+        sb
+          .from("daily_seal_calendar")
+          .select("date,kanji,romaji,meaning")
+          .gte("date", yearStart).lte("date", yearEnd)
+          .order("date", { ascending: true }),
+        sb.from("daily_results").select("date,elapsed_seconds")
+          .eq("user_id", user.id)
+          .gte("date", yearStart).lte("date", yearEnd),
+        sb.from("streak_freezes").select("date")
+          .eq("user_id", user.id)
+          .gte("date", yearStart).lte("date", yearEnd),
+        sb.from("profiles").select("created_at,is_pro").eq("id", user.id).maybeSingle(),
+      ]);
+    const completedByDate = new Map<string, number>();
+    for (const r of (results ?? []) as { date: string; elapsed_seconds: number }[]) {
+      completedByDate.set(r.date, r.elapsed_seconds);
+    }
+    const frozen = new Set<string>(((freezes ?? []) as { date: string }[]).map((f) => f.date));
+    const signupDate = profile?.created_at
+      ? new Date(profile.created_at).toISOString().slice(0, 10)
+      : yearStart;
+    series = assembleYearSeries({
+      today,
+      calendar: (cal ?? []) as any[],
+      completedByDate,
+      frozenDates: frozen,
+      signupDate,
+    });
+    streak = computeUnifiedStreak(today, new Set(completedByDate.keys()), frozen);
+    completedTodayElapsed = completedByDate.get(today);
+
+    // Yesterday-missed-and-Pro freeze prompt
+    if (profile?.is_pro) {
+      const yest = new Date(today + "T00:00:00Z");
+      yest.setUTCDate(yest.getUTCDate() - 1);
+      const yestStr = yest.toISOString().slice(0, 10);
+      const yestEntry = series.seals.find((s) => s.date === yestStr);
+      if (yestEntry?.state === "empty") {
+        const granted = `${yestStr.slice(0, 7)}-01`;
+        const { count } = await sb
+          .from("streak_freezes")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("granted_month", granted);
+        const used = count ?? 0;
+        const allotment = computeAllotment(profile.created_at, granted);
+        const remaining = Math.max(0, allotment - used);
+        if (remaining > 0) freezePrompt = { date: yestStr, kanji: yestEntry.kanji, remaining };
+      }
+    }
+  }
+
+  // Ledger preview (existing logic)
   let preview: { rank: string; name: string; time: string; first: boolean }[] = NAMES_FALLBACK;
   try {
     const { data } = await sb
@@ -53,51 +142,41 @@ export default async function Home() {
         first: i === 0,
       }));
     }
-  } catch {
-    /* schema may not exist yet — fall back to fixtures */
-  }
+  } catch {}
 
   return (
     <>
       <Masthead active="today" initial={initial} />
 
       <main className="px-6 lg:px-24 py-10 lg:py-16 max-w-[1480px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_540px] gap-10 lg:gap-20 items-start">
-          {/* LEFT: Today's daily */}
+        <div className="eyebrow red">{dateLine()}</div>
+
+        <div className="mt-6 max-w-[640px]">
+          <TodayCard
+            today={todaySeal}
+            completedElapsed={completedTodayElapsed}
+            streakDays={streak}
+            freezePrompt={freezePrompt}
+          />
+        </div>
+
+        {series && (
+          <div className="mt-10 max-w-[640px]">
+            <div className="flex justify-between items-baseline mb-3">
+              <div className="eyebrow">your year</div>
+              <div className="mono text-[11px] tracking-[0.14em] text-moss">
+                {series.seals.filter((s) => s.state === "filled" || s.state === "freeze").length}
+                {" / "}
+                {series.seals.length}
+              </div>
+            </div>
+            <YearScroll series={series} variant="home" />
+          </div>
+        )}
+
+        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-10">
           <div>
-            <div className="eyebrow red">{dateString}</div>
-            <h1 className="h-disp text-[clamp(48px,12vw,108px)] mt-4 leading-[0.96]">
-              Today&rsquo;s
-              <br />
-              box.
-            </h1>
-            <p className="ital text-moss text-[18px] lg:text-[22px] mt-4 leading-[1.4] max-w-[36ch]">
-              № 0472 · Hard. You haven&rsquo;t opened it yet.
-              <br />
-              2,184 are solving now &mdash; the board is quiet at this hour.
-            </p>
-
-            <Link
-              href="/play/daily"
-              className="group mt-12 bg-sumi text-bone px-7 py-6 flex items-center justify-between max-w-[520px] hover:bg-sumi/95 transition-colors"
-            >
-              <div>
-                <div className="mono text-[10px] tracking-[0.22em] uppercase text-bone/70">
-                  Daily · unlocks daily 00:00 local
-                </div>
-                <div className="mincho text-[28px] font-semibold mt-2">
-                  Begin today
-                </div>
-                <div className="ital text-[13px] text-bone/70 mt-1">
-                  enter takes you straight in
-                </div>
-              </div>
-              <div className="mincho text-[42px] text-vermillion leading-none transition-transform group-hover:translate-x-1">
-                →
-              </div>
-            </Link>
-
-            <p className="mt-8 mono text-[10px] tracking-[0.2em] uppercase text-moss">
+            <p className="mt-2 mono text-[10px] tracking-[0.2em] uppercase text-moss">
               global pace · today
             </p>
             <div className="mt-2.5 flex flex-wrap gap-x-8 gap-y-4">
@@ -116,55 +195,29 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* RIGHT: difficulty grid + leaderboard preview */}
           <div>
-            <div className="eyebrow mb-3">or just play</div>
-            <div className="grid grid-cols-2 gap-2">
-              <DifficultyTile k="易 Easy" sub="avg 4:12 · best 2:18" href="/play/easy" />
-              <DifficultyTile k="中 Medium" sub="avg 8:30 · best 5:42" href="/play/medium" />
-              <DifficultyTile k="難 Hard" sub="avg 14:50 · best 9:14" href="/play/hard" />
-              <DifficultyTile
-                k="極 Expert"
-                sub="23:00+ · pro"
-                href="/play/expert"
-                accent
-              />
+            <div className="flex justify-between items-baseline mb-3.5">
+              <div className="eyebrow">ledger · ала today</div>
+              <Link href="/leaderboard" className="ital text-vermillion text-[14px] hover:underline">
+                see all →
+              </Link>
             </div>
-
-            <div className="mt-9">
-              <div className="flex justify-between items-baseline mb-3.5">
-                <div className="eyebrow">ledger · ала today</div>
-                <Link
-                  href="/leaderboard"
-                  className="ital text-vermillion text-[14px] no-underline hover:underline"
+            <div>
+              {preview.map((row) => (
+                <div
+                  key={row.rank}
+                  className="grid grid-cols-[28px_1fr_auto] gap-3.5 py-2.5 border-b border-sumi/12"
                 >
-                  see all →
-                </Link>
-              </div>
-              <div>
-                {preview.map((row) => (
-                  <div
-                    key={row.rank}
-                    className="grid grid-cols-[28px_1fr_auto] gap-3.5 py-2.5 border-b border-sumi/12"
-                  >
-                    <div
-                      className={
-                        "kdate-jp text-[13px] " +
-                        (row.first ? "text-vermillion" : "text-moss")
-                      }
-                    >
-                      {row.rank}
-                    </div>
-                    <div className="text-[14px]">{row.name}</div>
-                    <div className="mincho text-[15px] font-semibold tnum">
-                      {row.time}
-                    </div>
+                  <div className={"kdate-jp text-[13px] " + (row.first ? "text-vermillion" : "text-moss")}>
+                    {row.rank}
                   </div>
-                ))}
-                <div className="text-center py-3.5 ital text-moss text-[14px]">
-                  <span className="text-vermillion mr-1">↘</span>
-                  your name lands when you finish.
+                  <div className="text-[14px]">{row.name}</div>
+                  <div className="mincho text-[15px] font-semibold tnum">{row.time}</div>
                 </div>
+              ))}
+              <div className="text-center py-3.5 ital text-moss text-[14px]">
+                <span className="text-vermillion mr-1">↘</span>
+                your name lands when you finish.
               </div>
             </div>
           </div>
@@ -176,58 +229,12 @@ export default async function Home() {
   );
 }
 
-function DifficultyTile({
-  k,
-  sub,
-  href,
-  accent,
-}: {
-  k: string;
-  sub: string;
-  href: string;
-  accent?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={
-        "border border-sumi p-4 transition-colors block " +
-        (accent
-          ? "bg-vermillion text-bone hover:bg-vermillion-deep"
-          : "bg-bone hover:bg-rice")
-      }
-    >
-      <div
-        className={
-          "kdate-jp text-[22px] font-semibold " + (accent ? "" : "")
-        }
-      >
-        {k}
-      </div>
-      <div
-        className={
-          "txt-small mt-1 " +
-          (accent
-            ? "text-bone/70 font-jakarta"
-            : "")
-        }
-      >
-        {sub}
-      </div>
-    </Link>
-  );
-}
-
 function Footer() {
   return (
     <footer className="border-t border-sumi/15 mt-16 px-6 lg:px-12 py-8 max-w-[1480px] mx-auto">
       <div className="flex flex-col md:flex-row justify-between gap-6 mono text-[10px] tracking-[0.2em] uppercase text-moss">
-        <div>
-          hako.app · since february · made in almaty
-        </div>
-        <div>
-          v1.0 · 8 may 2026
-        </div>
+        <div>hako.app · since february · made in almaty</div>
+        <div>v1.0 · 8 may 2026</div>
       </div>
     </footer>
   );

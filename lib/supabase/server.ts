@@ -35,15 +35,19 @@ export const createServerClient = () => {
 // Minimal stub matching the surface our pages use. Anything else throws
 // loudly so we notice missing coverage during dev.
 function makeNullClient() {
-  const noData = async () => ({ data: null, error: null });
+  const noData = async () => ({ data: null, error: null, count: 0 });
   const queryStub: any = {
     select: () => queryStub,
     eq: () => queryStub,
     order: () => queryStub,
     limit: () => queryStub,
+    gte: () => queryStub,
+    lte: () => queryStub,
     maybeSingle: () => noData(),
-    then: (resolve: (v: { data: null; error: null }) => unknown) =>
-      resolve({ data: null, error: null }),
+    insert: () => noData(),
+    upsert: () => noData(),
+    then: (resolve: (v: { data: null; error: null; count: 0 }) => unknown) =>
+      resolve({ data: null, error: null, count: 0 }),
   };
   return {
     auth: {
