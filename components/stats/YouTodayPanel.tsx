@@ -27,7 +27,7 @@ export function YouTodayPanel({
       <div className="eyebrow red">YOU TODAY</div>
       <dl className="mt-5">
         <Row label="streak" valueClassName={streakClass}>
-          {streak} days
+          {streak === 1 ? "1 day" : `${streak} days`}
         </Row>
         <Row label="year">
           {yearFilled} / {yearTotal}

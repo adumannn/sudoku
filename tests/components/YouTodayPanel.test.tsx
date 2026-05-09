@@ -51,6 +51,19 @@ describe("YouTodayPanel", () => {
     expect(screen.getByText("0 days")).toBeInTheDocument();
   });
 
+  it("renders 1 streak as '1 day' (singular)", () => {
+    render(
+      <YouTodayPanel
+        streak={1}
+        yearFilled={1}
+        yearTotal={365}
+        todayElapsed={null}
+        todayRank={null}
+      />,
+    );
+    expect(screen.getByText("1 day")).toBeInTheDocument();
+  });
+
   it("highlights streak in vermillion when streak >= 7", () => {
     render(
       <YouTodayPanel
