@@ -19,9 +19,17 @@ interface Props {
   streakDays: number;
   /** Optional: yesterday missed + freezes-remaining; if both present, show prompt. */
   freezePrompt?: { date: string; kanji: string; remaining: number } | null;
+  /** Vertical Japanese day label (e.g. 土曜日) for the left margin. */
+  tategakiDay?: string;
 }
 
-export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }: Props) {
+export function TodayCard({
+  today,
+  completedElapsed,
+  streakDays,
+  freezePrompt,
+  tategakiDay,
+}: Props) {
   const [freezeStatus, setFreezeStatus] = useState<"idle" | "pending" | "done" | "error">("idle");
 
   if (!today) {
@@ -49,21 +57,45 @@ export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }:
   };
 
   return (
-    <div className="border-t border-b border-sumi py-12 lg:py-16 px-1">
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,38%)_1fr] gap-12 lg:gap-20 items-center">
-        <div className="w-full max-w-[400px] aspect-square mx-auto lg:mx-0">
+    <div className="border-t border-b border-sumi py-12 lg:py-16 px-1 relative overflow-hidden">
+      {/* Decorative oversized faded kanji watermark behind the editorial column */}
+      <div
+        aria-hidden
+        className="watermark-kanji hidden lg:block"
+        style={{
+          fontSize: "560px",
+          right: "-80px",
+          top: "-80px",
+          color: "hsl(var(--sumi) / 0.035)",
+        }}
+      >
+        {today.kanji}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[28px_minmax(280px,38%)_1fr] gap-6 lg:gap-12 items-center relative">
+        {/* Tategaki day label down the left margin (desktop only) */}
+        <div className="hidden lg:flex items-start justify-center pt-2 self-start">
+          {tategakiDay && (
+            <div className="tategaki mincho text-vermillion/85 text-[14px] leading-none">
+              {tategakiDay}
+            </div>
+          )}
+        </div>
+
+        <div className="w-full max-w-[400px] aspect-square mx-auto lg:mx-0 hero-seal-impression">
           <Seal
             kanji={today.kanji}
             state={stamped ? "filled" : "today"}
             size="xl"
           />
         </div>
-        <div>
+
+        <div className="relative">
           <div className="eyebrow" style={{ letterSpacing: "0.28em", fontSize: "11px" }}>
             {stamped ? `STAMPED · ${formatTime(completedElapsed!)}` : "today's character"}
           </div>
           <div className="kdate-jp text-[44px] lg:text-[56px] leading-[1.05] mt-3">
-            {today.kanji} — {today.meaning}
+            {today.kanji} <span className="text-moss/40">—</span> {today.meaning}
           </div>
           <div className="mono text-[14px] tracking-[0.2em] uppercase text-moss mt-3">
             {today.romaji}
@@ -93,7 +125,8 @@ export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }:
               </Link>
             )}
             {streakDays > 0 && (
-              <span className="mono text-[12px] tracking-[0.16em] uppercase text-vermillion">
+              <span className="mono text-[12px] tracking-[0.16em] uppercase text-vermillion flex items-center gap-2">
+                <span className="inline-seal" aria-hidden>印</span>
                 streak · {streakDays}d
               </span>
             )}

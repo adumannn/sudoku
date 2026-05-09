@@ -38,3 +38,8 @@ export function dateLine(d = new Date()): string {
     .toLowerCase();
   return `${jp} · ${en} · ${day} ${month} · ${d.getFullYear()}`;
 }
+
+/** Just the Japanese weekday (e.g. 土曜日) — for tategaki margin labels. */
+export function weekdayJp(d = new Date()): string {
+  return WEEKDAY_JP[d.getDay()];
+}

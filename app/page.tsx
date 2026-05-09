@@ -8,7 +8,7 @@ import { todayUTC } from "@/lib/utils";
 import { computeUnifiedStreak } from "@/lib/seal/streak";
 import { computeAllotment } from "@/lib/seal/freeze";
 import { assembleYearSeries } from "@/lib/seal/year";
-import { dateLine } from "@/lib/kanji";
+import { dateLine, weekdayJp } from "@/lib/kanji";
 import type { YearSeries } from "@/lib/seal/types";
 
 export const dynamic = "force-dynamic";
@@ -157,27 +157,40 @@ export default async function Home() {
             completedElapsed={completedTodayElapsed}
             streakDays={streak}
             freezePrompt={freezePrompt}
+            tategakiDay={weekdayJp()}
           />
         </div>
 
-        <section className="mt-12">
-          <div className="eyebrow mb-3">global pace · today</div>
-          <div className="border-t border-b border-sumi/30 py-6 flex flex-col sm:grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-sumi/30">
-            <div className="pb-4 sm:pb-0 sm:pr-8">
-              <div className="kdate-jp text-[28px] font-semibold tnum leading-none">02:48</div>
-              <div className="mono text-[10px] tracking-[0.2em] uppercase text-moss mt-2">
-                first solve · nurali, ала
+        <section className="mt-14 relative">
+          <div
+            aria-hidden
+            className="watermark-kanji hidden lg:block"
+            style={{ fontSize: "200px", right: "-20px", top: "-20px" }}
+          >
+            刻
+          </div>
+          <div className="flex items-baseline justify-between mb-3 relative">
+            <div className="eyebrow">global pace · today</div>
+            <div className="mono text-[10px] tracking-[0.22em] text-moss/70 uppercase">
+              live · refreshed every minute
+            </div>
+          </div>
+          <div className="border-t border-b border-sumi/30 py-7 flex flex-col sm:grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-sumi/30 relative">
+            <div className="pb-5 sm:pb-0 sm:pr-10">
+              <div className="kdate-jp text-[44px] lg:text-[52px] font-semibold tnum leading-[0.95]">02:48</div>
+              <div className="mono text-[10px] tracking-[0.22em] uppercase text-moss mt-3">
+                first solve · <span className="text-vermillion">nurali, ала</span>
               </div>
             </div>
-            <div className="py-4 sm:py-0 sm:px-8">
-              <div className="kdate-jp text-[28px] font-semibold tnum leading-none">14:52</div>
-              <div className="mono text-[10px] tracking-[0.2em] uppercase text-moss mt-2">
+            <div className="py-5 sm:py-0 sm:px-10">
+              <div className="kdate-jp text-[44px] lg:text-[52px] font-semibold tnum leading-[0.95]">14:52</div>
+              <div className="mono text-[10px] tracking-[0.22em] uppercase text-moss mt-3">
                 global median
               </div>
             </div>
-            <div className="pt-4 sm:pt-0 sm:pl-8">
-              <div className="kdate-jp text-[28px] font-semibold tnum leading-none">2,184</div>
-              <div className="mono text-[10px] tracking-[0.2em] uppercase text-moss mt-2">
+            <div className="pt-5 sm:pt-0 sm:pl-10">
+              <div className="kdate-jp text-[44px] lg:text-[52px] font-semibold tnum leading-[0.95]">2,184</div>
+              <div className="mono text-[10px] tracking-[0.22em] uppercase text-moss mt-3">
                 solving now
               </div>
             </div>
@@ -185,42 +198,70 @@ export default async function Home() {
         </section>
 
         {series && (
-          <section className="mt-14">
-            <div className="flex justify-between items-baseline mb-3">
-              <div className="eyebrow">your year</div>
-              <div className="mono text-[11px] tracking-[0.14em] text-moss tnum">
-                {series.seals.filter((s) => s.state === "filled" || s.state === "freeze").length}
-                {" / "}
-                {series.seals.length}
-              </div>
+          <section className="mt-16 relative">
+            <div
+              aria-hidden
+              className="watermark-kanji hidden lg:block"
+              style={{ fontSize: "240px", right: "-30px", top: "-50px" }}
+            >
+              年
             </div>
-            <div className="border-t border-b border-sumi/30 py-5">
+            <div className="flex justify-between items-baseline mb-3 relative">
+              <div className="flex items-baseline gap-4">
+                <div className="eyebrow">your year</div>
+                <div className="mono text-[11px] tracking-[0.18em] text-moss/70 tnum">
+                  {series.seals.filter((s) => s.state === "filled" || s.state === "freeze").length}
+                  {" / "}
+                  {series.seals.length}
+                </div>
+              </div>
+              <Link
+                href="/year"
+                className="mono text-[11px] tracking-[0.18em] uppercase text-vermillion hover:underline underline-offset-4"
+              >
+                view full year ↗
+              </Link>
+            </div>
+            <div className="border-t border-b border-sumi/30 py-6">
               <YearScroll series={series} />
             </div>
           </section>
         )}
 
-        <section className="mt-16">
-          <div className="flex justify-between items-baseline mb-3">
+        <section className="mt-16 relative">
+          <div
+            aria-hidden
+            className="watermark-kanji hidden lg:block"
+            style={{ fontSize: "200px", right: "-20px", top: "-30px" }}
+          >
+            番
+          </div>
+          <div className="flex justify-between items-baseline mb-3 relative">
             <div className="eyebrow">ledger · ала today</div>
-            <Link href="/leaderboard" className="ital text-vermillion text-[14px] hover:underline">
-              see all →
+            <Link
+              href="/leaderboard"
+              className="mono text-[11px] tracking-[0.18em] uppercase text-vermillion hover:underline underline-offset-4"
+            >
+              see all ↗
             </Link>
           </div>
-          <div className="border-t border-sumi/30">
+          <div className="border-t border-sumi/30 relative">
             {preview.map((row) => (
               <div
                 key={row.rank}
-                className="grid grid-cols-[40px_1fr_auto] gap-4 py-3 border-b border-sumi/12 items-baseline"
+                className="grid grid-cols-[44px_1fr_auto] gap-4 py-4 border-b border-sumi/12 items-baseline group"
               >
-                <div className={"kdate-jp text-[14px] tnum " + (row.first ? "text-vermillion" : "text-moss")}>
+                <div className={"kdate-jp text-[16px] tnum " + (row.first ? "text-vermillion" : "text-moss")}>
                   {row.rank}
                 </div>
-                <div className="text-[15px]">{row.name}</div>
-                <div className="mincho text-[16px] font-semibold tnum">{row.time}</div>
+                <div className="text-[15px] flex items-center gap-3">
+                  {row.name}
+                  {row.first && <span className="inline-seal" aria-hidden>一</span>}
+                </div>
+                <div className="mincho text-[18px] font-semibold tnum">{row.time}</div>
               </div>
             ))}
-            <div className="text-center py-4 ital text-moss text-[14px]">
+            <div className="text-center py-5 ital text-moss text-[14px]">
               <span className="text-vermillion mr-1">↘</span>
               your name lands when you finish.
             </div>
