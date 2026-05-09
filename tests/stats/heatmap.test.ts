@@ -10,7 +10,7 @@ describe("computeUserHeatmap", () => {
       mediansByDate: new Map(),
     });
     expect(days).toHaveLength(182);
-    expect(days[0].date).toBe("2025-11-08"); // 181 days before
+    expect(days[0].date).toBe("2025-11-09"); // 181 days before
     expect(days[181].date).toBe("2026-05-09");
     expect(days.every((d) => d.level === 0)).toBe(true);
   });
