@@ -9,7 +9,7 @@ import { todayUTC, formatTime } from "@/lib/utils";
 import { computeUnifiedStreak } from "@/lib/seal/streak";
 import { computeAllotment } from "@/lib/seal/freeze";
 import { assembleYearSeries } from "@/lib/seal/year";
-import { dateLine } from "@/lib/kanji";
+import { dateLine, weekdayJp } from "@/lib/kanji";
 import { computeDailySnapshot, computeCityCounts } from "@/lib/stats/leaderboard";
 import { getCity } from "@/lib/geo";
 import type { YearSeries } from "@/lib/seal/types";
@@ -196,6 +196,7 @@ export default async function Home() {
             completedElapsed={completedTodayElapsed}
             streakDays={streak}
             freezePrompt={freezePrompt}
+            tategakiDay={weekdayJp()}
           />
         </div>
 
@@ -209,7 +210,7 @@ export default async function Home() {
                 {series.seals.length}
               </div>
             </div>
-            <YearScroll series={series} variant="home" />
+            <YearScroll series={series} />
           </div>
         )}
 
