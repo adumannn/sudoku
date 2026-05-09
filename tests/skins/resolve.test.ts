@@ -123,3 +123,33 @@ describe("resolveActiveSkin — home/casual surface", () => {
     expect(result.slug).toBe("sumi-e");
   });
 });
+
+describe("resolveActiveSkin — empty input guard", () => {
+  it("returns hardcoded default when skins is empty (home surface)", () => {
+    const result = resolveActiveSkin({
+      surface: "home",
+      activeSkinId: null,
+      isPro: false,
+      ownedSkinIds: new Set(),
+      dailySkinId: null,
+      today: "2026-04-01",
+      skins: [],
+    });
+    expect(result.slug).toBe("default");
+    expect(result.sealKanji).toBe("完");
+    expect(result.paletteKey).toBe("default");
+  });
+
+  it("returns hardcoded default when skins is empty (daily surface)", () => {
+    const result = resolveActiveSkin({
+      surface: "daily",
+      activeSkinId: null,
+      isPro: false,
+      ownedSkinIds: new Set(),
+      dailySkinId: "s-spring",
+      today: "2026-04-01",
+      skins: [],
+    });
+    expect(result.slug).toBe("default");
+  });
+});

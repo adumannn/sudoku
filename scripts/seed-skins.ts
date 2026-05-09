@@ -81,57 +81,73 @@ async function main() {
     console.log(`  ✓ ${skin.slug}`);
   }
 
+  const fail = (msg: string, error?: unknown): never => {
+    console.error(msg, error ?? "");
+    process.exit(1);
+  };
+
   // Validate seasons are non-overlapping (editorial constraint).
-  const { data: seasons } = await sb
+  const { data: seasons, error: seasonsError } = await sb
     .from("skins")
-    .select("slug, start_date, end_date")
+    .select("id, slug, start_date, end_date")
     .eq("kind", "season")
     .order("start_date", { ascending: true });
+  if (seasonsError) fail("Failed to load seasons:", seasonsError);
   if (seasons) {
     for (let i = 1; i < seasons.length; i++) {
       if (seasons[i].start_date! <= seasons[i - 1].end_date!) {
-        console.error(
+        fail(
           `Overlap detected: ${seasons[i - 1].slug} (${seasons[i - 1].end_date}) vs ${seasons[i].slug} (${seasons[i].start_date})`,
         );
-        process.exit(1);
       }
     }
   }
   console.log(`  ✓ ${seasons?.length ?? 0} seasons disjoint`);
 
   console.log("Backfilling daily_puzzles.skin_id by date range...");
-  // Iterate dailies and assign by season range using the JS client (RPC `exec_sql`
-  // is not available by default in Supabase; the plan suggested it as a primary
-  // path with a fallback. Keep it simple: just iterate.)
-  const { data: unset } = await sb
+  // Iterate dailies and assign by season range using the JS client.
+  const { data: unset, error: unsetError } = await sb
     .from("daily_puzzles")
     .select("date")
     .is("skin_id", null);
+  if (unsetError) fail("Failed to load dailies needing backfill:", unsetError);
+  // Map slug → id once so we don't requery skins per row.
+  const seasonIdBySlug = new Map<string, string>();
+  for (const s of seasons ?? []) seasonIdBySlug.set(s.slug, s.id);
   for (const row of unset ?? []) {
     const season = (seasons ?? []).find(
       (s) => row.date >= s.start_date! && row.date <= s.end_date!,
     );
     if (!season) continue;
-    const { data: seasonRow } = await sb.from("skins").select("id").eq("slug", season.slug).single();
-    if (!seasonRow) continue;
-    await sb.from("daily_puzzles").update({ skin_id: seasonRow.id }).eq("date", row.date);
+    const seasonId = seasonIdBySlug.get(season.slug);
+    if (!seasonId) continue;
+    const { error: updateError } = await sb
+      .from("daily_puzzles")
+      .update({ skin_id: seasonId })
+      .eq("date", row.date);
+    if (updateError) fail(`Failed to backfill daily ${row.date}:`, updateError);
   }
 
   console.log("Backfilling stragglers with default skin...");
-  const { data: defaultSkin } = await sb.from("skins").select("id").eq("slug", "default").single();
-  if (!defaultSkin) {
-    console.error("Default skin not found after seed.");
-    process.exit(1);
-  }
-  await sb.from("daily_puzzles").update({ skin_id: defaultSkin.id }).is("skin_id", null);
+  const { data: defaultSkin, error: defaultErr } = await sb
+    .from("skins")
+    .select("id")
+    .eq("slug", "default")
+    .single();
+  if (defaultErr || !defaultSkin) fail("Default skin not found after seed:", defaultErr);
+  const { error: defaultUpdateErr } = await sb
+    .from("daily_puzzles")
+    .update({ skin_id: defaultSkin!.id })
+    .is("skin_id", null);
+  if (defaultUpdateErr) fail("Failed to assign default skin to stragglers:", defaultUpdateErr);
 
-  const { count: stillNull } = await sb
+  const { count: stillNull, error: countErr } = await sb
     .from("daily_puzzles")
     .select("*", { count: "exact", head: true })
     .is("skin_id", null);
+  if (countErr) fail("Failed to verify backfill completeness:", countErr);
   if ((stillNull ?? 0) > 0) {
-    console.error(`${stillNull} daily_puzzles rows still have NULL skin_id after backfill.`);
-    process.exit(1);
+    fail(`${stillNull} daily_puzzles rows still have NULL skin_id after backfill.`);
   }
   console.log("  ✓ all daily_puzzles have skin_id");
 

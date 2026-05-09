@@ -10,6 +10,18 @@ interface ResolveArgs {
   skins: SkinRecord[];
 }
 
+// Hardcoded last-resort fallback used only when the skins array is empty —
+// e.g. a brief misconfiguration where neither the seed nor the 0009 default
+// row exists yet. Mirrors the SKIN_REGISTRY "default" entry so the UI still
+// renders deterministically without a runtime crash.
+const HARDCODED_DEFAULT: SkinResolved = {
+  slug: "default",
+  paletteKey: "default",
+  sealKanji: "完",
+  masthead: "Today's box.",
+  kanjiLabel: "完",
+};
+
 function toResolved(s: SkinRecord): SkinResolved {
   return {
     slug: s.slug,
@@ -53,6 +65,10 @@ export function canApplyOverride(args: {
 }
 
 export function resolveActiveSkin(args: ResolveArgs): SkinResolved {
+  // 0. Empty input — no skins seeded yet. Hand back a hardcoded default so
+  // the UI renders deterministically instead of crashing on an undefined.
+  if (args.skins.length === 0) return HARDCODED_DEFAULT;
+
   // 1. Daily surface is locked to the puzzle's published skin.
   if (args.surface === "daily") {
     const daily = findById(args.skins, args.dailySkinId);

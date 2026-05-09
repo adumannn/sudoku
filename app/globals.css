@@ -596,7 +596,15 @@
    ============================================================ */
 
 [data-skin="default"] {
-  /* identical to :root — explicit so resolution is deterministic */
+  /* Explicit reset so a nested wrapper marked default returns to the base
+     palette even when an ancestor wears a season skin. An empty block does
+     not clear inherited custom properties at the matched element's scope. */
+  --bone: 41 38% 87%;
+  --rice: 41 51% 91%;
+  --vermillion: 9 66% 46%;
+  --vermillion-deep: 9 66% 33%;
+  --moss: 33 19% 33%;
+  --moss-2: 38 16% 47%;
 }
 
 [data-skin="spring"] {

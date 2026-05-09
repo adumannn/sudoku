@@ -15,7 +15,7 @@ create table public.skins (
   active        boolean not null default true,
   created_at    timestamptz not null default now(),
   constraint skins_dates_match_kind check (
-    (kind = 'season' and start_date is not null and end_date is not null) or
+    (kind = 'season' and start_date is not null and end_date is not null and start_date <= end_date) or
     (kind <> 'season' and start_date is null and end_date is null)
   )
 );
