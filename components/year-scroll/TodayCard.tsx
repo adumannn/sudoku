@@ -26,9 +26,9 @@ export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }:
 
   if (!today) {
     return (
-      <div className="border-t border-b border-sumi py-7 px-1">
+      <div className="border-t border-b border-sumi py-12 lg:py-16 px-1">
         <div className="eyebrow">today</div>
-        <p className="ital text-moss text-[16px] mt-3">
+        <p className="ital text-moss text-[18px] mt-3">
           today's seal isn't ready yet — check back shortly.
         </p>
       </div>
@@ -49,32 +49,35 @@ export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }:
   };
 
   return (
-    <div className="border-t border-b border-sumi py-7 px-1">
-      <div className="grid grid-cols-[96px_1fr] gap-5 items-center">
-        <div className="w-[96px] h-[96px]">
+    <div className="border-t border-b border-sumi py-12 lg:py-16 px-1">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,38%)_1fr] gap-12 lg:gap-20 items-center">
+        <div className="w-full max-w-[400px] aspect-square mx-auto lg:mx-0">
           <Seal
             kanji={today.kanji}
             state={stamped ? "filled" : "today"}
-            size="lg"
+            size="xl"
           />
         </div>
         <div>
-          <div className="eyebrow">
+          <div className="eyebrow" style={{ letterSpacing: "0.28em", fontSize: "11px" }}>
             {stamped ? `STAMPED · ${formatTime(completedElapsed!)}` : "today's character"}
           </div>
-          <div className="kdate-jp text-[22px] mt-1">
-            {today.kanji} — {today.meaning} · {today.romaji}
+          <div className="kdate-jp text-[44px] lg:text-[56px] leading-[1.05] mt-3">
+            {today.kanji} — {today.meaning}
+          </div>
+          <div className="mono text-[14px] tracking-[0.2em] uppercase text-moss mt-3">
+            {today.romaji}
           </div>
           {today.senseiLine && (
-            <p className="ital text-sumi text-[14px] mt-2 leading-snug">
+            <p className="ital text-sumi text-[20px] lg:text-[22px] mt-5 leading-snug max-w-[44ch]">
               "{today.senseiLine}"
             </p>
           )}
-          <div className="mt-4 flex items-center gap-4 flex-wrap">
+          <div className="mt-7 pt-5 border-t border-sumi/15 flex items-center gap-4 flex-wrap">
             {!stamped && (
               <Link
                 href="/play/daily"
-                className="bg-sumi text-bone px-4 py-2 mono text-[11px] tracking-[0.16em] uppercase hover:bg-sumi/95"
+                className="bg-sumi text-bone px-7 py-3.5 mono text-[12px] tracking-[0.18em] uppercase hover:bg-sumi/95"
               >
                 play today
               </Link>
@@ -84,19 +87,19 @@ export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }:
                 href={`/api/share/seal/${today.date}`}
                 target="_blank"
                 rel="noopener"
-                className="border border-sumi text-sumi px-4 py-2 mono text-[11px] tracking-[0.16em] uppercase hover:bg-sumi/5"
+                className="border border-sumi text-sumi px-7 py-3.5 mono text-[12px] tracking-[0.18em] uppercase hover:bg-sumi/5"
               >
                 share
               </Link>
             )}
             {streakDays > 0 && (
-              <span className="mono text-[11px] tracking-[0.14em] uppercase text-vermillion">
+              <span className="mono text-[12px] tracking-[0.16em] uppercase text-vermillion">
                 streak · {streakDays}d
               </span>
             )}
           </div>
           {freezePrompt && freezeStatus === "idle" && (
-            <div className="mt-4 border-t border-sumi/15 pt-3 text-[13px] ital text-sumi">
+            <div className="mt-5 border-t border-sumi/15 pt-4 text-[14px] ital text-sumi max-w-[44ch]">
               yesterday's seal — {freezePrompt.kanji} — was missed.{" "}
               <button
                 onClick={applyFreeze}
@@ -108,15 +111,15 @@ export function TodayCard({ today, completedElapsed, streakDays, freezePrompt }:
             </div>
           )}
           {freezeStatus === "pending" && (
-            <div className="mt-4 text-[13px] ital text-moss">applying freeze…</div>
+            <div className="mt-5 text-[14px] ital text-moss">applying freeze…</div>
           )}
           {freezeStatus === "done" && (
-            <div className="mt-4 text-[13px] ital text-vermillion">
+            <div className="mt-5 text-[14px] ital text-vermillion">
               freeze applied · streak kept.
             </div>
           )}
           {freezeStatus === "error" && (
-            <div className="mt-4 text-[13px] ital text-hazard">
+            <div className="mt-5 text-[14px] ital text-hazard">
               could not apply freeze.
             </div>
           )}
