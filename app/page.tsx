@@ -73,8 +73,13 @@ export default async function Home() {
   if (user) {
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
-    const [{ data: cal }, { data: results }, { data: freezes }, { data: profile }] =
-      await Promise.all([
+    const [
+      { data: cal },
+      { data: results },
+      { data: freezes },
+      { data: profile },
+      { data: dailyMeta },
+    ] = await Promise.all([
         sb
           .from("daily_seal_calendar")
           .select("date,kanji,romaji,meaning")
@@ -87,6 +92,10 @@ export default async function Home() {
           .eq("user_id", user.id)
           .gte("date", yearStart).lte("date", yearEnd),
         sb.from("profiles").select("created_at,is_pro,city").eq("id", user.id).maybeSingle(),
+        sb
+          .from("daily_puzzles")
+          .select("date, skin_id, skins(seal_kanji)")
+          .gte("date", yearStart).lte("date", yearEnd),
       ]);
     profileCity = profile?.city ?? null;
     const completedByDate = new Map<string, number>();
@@ -94,6 +103,11 @@ export default async function Home() {
       completedByDate.set(r.date, r.elapsed_seconds);
     }
     const frozen = new Set<string>(((freezes ?? []) as { date: string }[]).map((f) => f.date));
+    type DailyMetaRow = { date: string; skin_id: string; skins: { seal_kanji: string } | null };
+    const sealKanjiByDate = new Map<string, string>();
+    for (const r of (dailyMeta ?? []) as unknown as DailyMetaRow[]) {
+      sealKanjiByDate.set(r.date, r.skins?.seal_kanji ?? "完");
+    }
     const signupDate = profile?.created_at
       ? new Date(profile.created_at).toISOString().slice(0, 10)
       : yearStart;
@@ -103,6 +117,7 @@ export default async function Home() {
       completedByDate,
       frozenDates: frozen,
       signupDate,
+      sealKanjiByDate,
     });
     streak = computeUnifiedStreak(today, new Set(completedByDate.keys()), frozen);
     completedTodayElapsed = completedByDate.get(today);
