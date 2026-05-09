@@ -54,6 +54,13 @@ export default async function Home() {
     .select("line")
     .eq("date", today)
     .maybeSingle();
+  const { data: todayPuzzle } = await sb
+    .from("daily_puzzles")
+    .select("skins(seal_kanji)")
+    .eq("date", today)
+    .maybeSingle();
+  const todaySealKanji =
+    (todayPuzzle?.skins as { seal_kanji: string } | null)?.seal_kanji ?? "完";
   const todaySeal = todayCal
     ? {
         date: todayCal.date,
@@ -61,6 +68,7 @@ export default async function Home() {
         romaji: todayCal.romaji,
         meaning: todayCal.meaning,
         senseiLine: todayLine?.line ?? null,
+        sealKanji: todaySealKanji,
       }
     : null;
 
