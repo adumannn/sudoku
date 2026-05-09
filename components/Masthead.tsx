@@ -37,7 +37,22 @@ function AvatarDropdown({
 }) {
   const onSignOut = async () => {
     const sb = createClient();
-    await sb.auth.signOut();
+    // Default scope is "global" — that signs out every device and can 403
+    // when a third-party-cookie blocker stops the refresh-token cookie from
+    // reaching the auth server. Retry with "local" so the current tab still
+    // gets cleared, then redirect.
+    let { error } = await sb.auth.signOut();
+    if (error) {
+      console.warn("[signOut] global failed, retrying local:", error);
+      ({ error } = await sb.auth.signOut({ scope: "local" }));
+    }
+    if (error) {
+      console.error("[signOut] local also failed:", error);
+      window.alert(
+        "Couldn't sign out — try clearing cookies for this site.",
+      );
+      return;
+    }
     window.location.href = "/";
   };
   return (

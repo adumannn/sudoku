@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { saveUsername } from "@/app/actions/save-username";
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function UsernamePicker({ current }: Props) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(current);
   const [pending, start] = useTransition();
@@ -18,6 +20,10 @@ export function UsernamePicker({ current }: Props) {
       const res = await saveUsername({ username: value });
       if (res.ok) {
         setEditing(false);
+        // revalidatePath on the server invalidates the cache; refresh()
+        // re-fetches the server tree so the profile header updates without
+        // a manual reload.
+        router.refresh();
       } else {
         setErr(
           res.error === "format"

@@ -56,7 +56,9 @@ export default async function Profile() {
   const user = session.user;
 
   const initial = user.email?.[0] ?? "·";
-  const emailHandle = user.email?.split("@")[0] ?? "duman";
+  // Fall back to a short stable identifier rather than a hardcoded name when
+  // the email is missing — never show another user's identity.
+  const emailHandle = user.email?.split("@")[0] ?? user.id.slice(0, 8);
 
   const today = todayUTC();
   const windowStart = (() => {

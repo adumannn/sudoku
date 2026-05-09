@@ -16,10 +16,15 @@ export async function saveUsername(input: { username: string }) {
     return { ok: false as const, error: "format" as const };
   }
 
+  // Upsert (not update) so the profile is guaranteed to exist after this
+  // call. The signup trigger normally creates the row, but a missed trigger
+  // or manual deletion would otherwise turn this into a silent no-op.
+  // .select().single() forces an error response when nothing is written.
   const { error } = await sb
     .from("profiles")
-    .update({ username: normalized })
-    .eq("id", user.id);
+    .upsert({ id: user.id, username: normalized }, { onConflict: "id" })
+    .select("id")
+    .single();
 
   if (error) {
     // Postgres unique violation (23505) — surface as a friendly "taken" error.
