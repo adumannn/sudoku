@@ -6,30 +6,39 @@ import type { SealEntry, YearSeries } from "@/lib/seal/types";
 
 interface Props {
   series: YearSeries;
-  /** Variant for embed contexts. 'home' caps height; 'full' expands. */
-  variant?: "home" | "full";
 }
 
-const WEEKDAY_HEADERS = ["月", "火", "水", "木", "金", "土", "日"]; // Mon..Sun
+const MONTH_ABBR = [
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec",
+];
 
-export function YearScroll({ series, variant = "home" }: Props) {
+const CELL_PX = 14;
+const GAP_PX = 3;
+
+export function YearScroll({ series }: Props) {
   const todayRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [popover, setPopover] = useState<SealEntry | null>(null);
 
   useEffect(() => {
-    todayRef.current?.scrollIntoView({ block: "center" });
+    const todayEl = todayRef.current;
+    const container = scrollRef.current;
+    if (!todayEl || !container) return;
+    const target = todayEl.offsetLeft - container.clientWidth / 2 + todayEl.clientWidth / 2;
+    container.scrollLeft = Math.max(0, target);
   }, []);
 
   const onSealClick = (e: SealEntry) => {
     if (e.state === "filled" || e.state === "freeze") setPopover(e);
   };
 
-  const cellsByWeek: SealEntry[][] = [];
   // Bucket seals into weeks aligned to ISO Mon-start. Pad the front of week 0 if year doesn't start Monday.
+  const cellsByWeek: (SealEntry | null)[][] = [];
   if (series.seals.length > 0) {
     const first = new Date(series.seals[0].date + "T00:00:00Z");
-    const dow = (first.getUTCDay() + 6) % 7; // 0..6 (Mon..Sun)
-    let week: SealEntry[] = Array(dow).fill(null) as any[];
+    const dow = (first.getUTCDay() + 6) % 7;
+    let week: (SealEntry | null)[] = Array(dow).fill(null);
     for (const e of series.seals) {
       week.push(e);
       if (week.length === 7) {
@@ -38,82 +47,72 @@ export function YearScroll({ series, variant = "home" }: Props) {
       }
     }
     if (week.length) {
-      while (week.length < 7) week.push(null as any);
+      while (week.length < 7) week.push(null);
       cellsByWeek.push(week);
     }
   }
 
-  return (
-    <div
-      className={
-        variant === "home"
-          ? "max-h-[440px] overflow-y-auto pr-2"
-          : "h-full overflow-y-auto pr-2"
+  // Detect month boundaries: find the first non-null entry of each month and record its column.
+  const monthMarkers: { weekIndex: number; abbr: string }[] = [];
+  let lastMonth = -1;
+  cellsByWeek.forEach((week, wi) => {
+    for (const entry of week) {
+      if (!entry) continue;
+      const month = parseInt(entry.date.slice(5, 7), 10) - 1;
+      if (month !== lastMonth) {
+        monthMarkers.push({ weekIndex: wi, abbr: MONTH_ABBR[month] });
+        lastMonth = month;
       }
-    >
+      break;
+    }
+  });
+
+  return (
+    <div ref={scrollRef} className="overflow-x-auto pb-2 scroll-smooth">
       <div
-        className="grid items-start gap-1"
-        style={{ gridTemplateColumns: "36px repeat(7, 1fr)" }}
+        className="grid items-start"
+        style={{
+          gridTemplateColumns: `repeat(${cellsByWeek.length}, ${CELL_PX}px)`,
+          gridTemplateRows: `auto repeat(7, ${CELL_PX}px)`,
+          gap: `${GAP_PX}px`,
+        }}
       >
-        <div />
-        {WEEKDAY_HEADERS.map((h) => (
+        {monthMarkers.map((m) => (
           <div
-            key={h}
-            className="mincho text-[10px] text-moss text-center pb-1"
+            key={`m-${m.weekIndex}`}
+            className="mono text-[9px] tracking-[0.18em] text-moss uppercase pb-1 whitespace-nowrap"
+            style={{ gridColumn: m.weekIndex + 1, gridRow: 1 }}
           >
-            {h}
+            {m.abbr}
           </div>
         ))}
-        {cellsByWeek.map((week, wi) => (
-          <Row
-            key={wi}
-            week={week}
-            weekNumber={wi + 1}
-            onClick={onSealClick}
-            todayRef={todayRef}
-          />
-        ))}
+        {cellsByWeek.map((week, wi) =>
+          week.map((entry, di) => {
+            if (!entry) return null;
+            const isToday = entry.state === "today";
+            return (
+              <div
+                key={entry.date}
+                ref={isToday ? todayRef : undefined}
+                style={{ gridColumn: wi + 1, gridRow: di + 2 }}
+              >
+                <Seal
+                  kanji={entry.kanji}
+                  state={entry.state}
+                  size="xs"
+                  onClick={
+                    entry.state === "filled" || entry.state === "freeze"
+                      ? () => onSealClick(entry)
+                      : undefined
+                  }
+                  ariaLabel={`${entry.date} · ${entry.kanji}`}
+                />
+              </div>
+            );
+          }),
+        )}
       </div>
       <SealPopover entry={popover} open={!!popover} onOpenChange={(o) => !o && setPopover(null)} />
     </div>
-  );
-}
-
-function Row({
-  week,
-  weekNumber,
-  onClick,
-  todayRef,
-}: {
-  week: SealEntry[];
-  weekNumber: number;
-  onClick: (e: SealEntry) => void;
-  todayRef: React.RefObject<HTMLDivElement>;
-}) {
-  return (
-    <>
-      <div className="mono text-[9px] text-moss/60 self-center text-right pr-1">
-        {weekNumber % 4 === 1 ? `w${weekNumber.toString().padStart(2, "0")}` : ""}
-      </div>
-      {week.map((entry, di) => {
-        if (!entry) return <div key={`pad-${weekNumber}-${di}`} aria-hidden />;
-        const isToday = entry.state === "today";
-        return (
-          <div key={entry.date} ref={isToday ? todayRef : undefined}>
-            <Seal
-              kanji={entry.kanji}
-              state={entry.state}
-              size="sm"
-              onClick={
-                entry.state === "filled" || entry.state === "freeze"
-                  ? () => onClick(entry)
-                  : undefined
-              }
-              ariaLabel={`${entry.date} · ${entry.kanji}`}
-            />
-          </div>
-        );
-      })}
-    </>
   );
 }

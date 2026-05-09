@@ -5,15 +5,20 @@ import type { SealState } from "@/lib/seal/types";
 export interface SealProps {
   kanji?: string;
   state: SealState;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   onClick?: () => void;
   ariaLabel?: string;
 }
 
 const SIZES = {
+  xs: { box: "text-[8px]", corner: "w-[5px] h-[5px] text-[3px] -bottom-[1px] -right-[1px]" },
   sm: { box: "text-[14px]", corner: "w-[8px] h-[8px] text-[5px] -bottom-[1px] -right-[1px]" },
   md: { box: "text-[36px]", corner: "w-[16px] h-[16px] text-[9px] bottom-[3px] right-[3px]" },
   lg: { box: "text-[96px]", corner: "w-[24px] h-[24px] text-[14px] bottom-[8px] right-[8px]" },
+  xl: {
+    box: "text-[clamp(200px,30vw,360px)]",
+    corner: "w-[56px] h-[56px] text-[26px] bottom-[16px] right-[16px]",
+  },
 };
 
 export function Seal({ kanji, state, size = "sm", onClick, ariaLabel }: SealProps) {

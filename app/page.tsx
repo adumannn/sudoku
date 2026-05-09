@@ -148,10 +148,10 @@ export default async function Home() {
     <>
       <Masthead active="today" initial={initial} />
 
-      <main className="px-6 lg:px-24 py-10 lg:py-16 max-w-[1480px] mx-auto">
+      <main className="px-6 lg:px-16 py-10 lg:py-14 max-w-[1480px] mx-auto">
         <div className="eyebrow red">{dateLine()}</div>
 
-        <div className="mt-6 max-w-[640px]">
+        <div className="mt-6">
           <TodayCard
             today={todaySeal}
             completedElapsed={completedTodayElapsed}
@@ -160,68 +160,72 @@ export default async function Home() {
           />
         </div>
 
+        <section className="mt-12">
+          <div className="eyebrow mb-3">global pace · today</div>
+          <div className="border-t border-b border-sumi/30 py-6 flex flex-col sm:grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-sumi/30">
+            <div className="pb-4 sm:pb-0 sm:pr-8">
+              <div className="kdate-jp text-[28px] font-semibold tnum leading-none">02:48</div>
+              <div className="mono text-[10px] tracking-[0.2em] uppercase text-moss mt-2">
+                first solve · nurali, ала
+              </div>
+            </div>
+            <div className="py-4 sm:py-0 sm:px-8">
+              <div className="kdate-jp text-[28px] font-semibold tnum leading-none">14:52</div>
+              <div className="mono text-[10px] tracking-[0.2em] uppercase text-moss mt-2">
+                global median
+              </div>
+            </div>
+            <div className="pt-4 sm:pt-0 sm:pl-8">
+              <div className="kdate-jp text-[28px] font-semibold tnum leading-none">2,184</div>
+              <div className="mono text-[10px] tracking-[0.2em] uppercase text-moss mt-2">
+                solving now
+              </div>
+            </div>
+          </div>
+        </section>
+
         {series && (
-          <div className="mt-10 max-w-[640px]">
+          <section className="mt-14">
             <div className="flex justify-between items-baseline mb-3">
               <div className="eyebrow">your year</div>
-              <div className="mono text-[11px] tracking-[0.14em] text-moss">
+              <div className="mono text-[11px] tracking-[0.14em] text-moss tnum">
                 {series.seals.filter((s) => s.state === "filled" || s.state === "freeze").length}
                 {" / "}
                 {series.seals.length}
               </div>
             </div>
-            <YearScroll series={series} variant="home" />
-          </div>
+            <div className="border-t border-b border-sumi/30 py-5">
+              <YearScroll series={series} />
+            </div>
+          </section>
         )}
 
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div>
-            <p className="mt-2 mono text-[10px] tracking-[0.2em] uppercase text-moss">
-              global pace · today
-            </p>
-            <div className="mt-2.5 flex flex-wrap gap-x-8 gap-y-4">
-              <div>
-                <div className="kdate-jp text-2xl font-semibold tnum">02:48</div>
-                <div className="txt-small">first solve · nurali, ала</div>
-              </div>
-              <div className="sm:border-l sm:border-sumi sm:pl-6">
-                <div className="kdate-jp text-2xl font-semibold tnum">14:52</div>
-                <div className="txt-small">global median</div>
-              </div>
-              <div className="sm:border-l sm:border-sumi sm:pl-6">
-                <div className="kdate-jp text-2xl font-semibold tnum">2,184</div>
-                <div className="txt-small">solving now</div>
-              </div>
-            </div>
+        <section className="mt-16">
+          <div className="flex justify-between items-baseline mb-3">
+            <div className="eyebrow">ledger · ала today</div>
+            <Link href="/leaderboard" className="ital text-vermillion text-[14px] hover:underline">
+              see all →
+            </Link>
           </div>
-
-          <div>
-            <div className="flex justify-between items-baseline mb-3.5">
-              <div className="eyebrow">ledger · ала today</div>
-              <Link href="/leaderboard" className="ital text-vermillion text-[14px] hover:underline">
-                see all →
-              </Link>
-            </div>
-            <div>
-              {preview.map((row) => (
-                <div
-                  key={row.rank}
-                  className="grid grid-cols-[28px_1fr_auto] gap-3.5 py-2.5 border-b border-sumi/12"
-                >
-                  <div className={"kdate-jp text-[13px] " + (row.first ? "text-vermillion" : "text-moss")}>
-                    {row.rank}
-                  </div>
-                  <div className="text-[14px]">{row.name}</div>
-                  <div className="mincho text-[15px] font-semibold tnum">{row.time}</div>
+          <div className="border-t border-sumi/30">
+            {preview.map((row) => (
+              <div
+                key={row.rank}
+                className="grid grid-cols-[40px_1fr_auto] gap-4 py-3 border-b border-sumi/12 items-baseline"
+              >
+                <div className={"kdate-jp text-[14px] tnum " + (row.first ? "text-vermillion" : "text-moss")}>
+                  {row.rank}
                 </div>
-              ))}
-              <div className="text-center py-3.5 ital text-moss text-[14px]">
-                <span className="text-vermillion mr-1">↘</span>
-                your name lands when you finish.
+                <div className="text-[15px]">{row.name}</div>
+                <div className="mincho text-[16px] font-semibold tnum">{row.time}</div>
               </div>
+            ))}
+            <div className="text-center py-4 ital text-moss text-[14px]">
+              <span className="text-vermillion mr-1">↘</span>
+              your name lands when you finish.
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
       <Footer />
