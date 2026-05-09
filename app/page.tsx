@@ -13,6 +13,7 @@ import { assembleYearSeries } from "@/lib/seal/year";
 import { dateLine, weekdayJp } from "@/lib/kanji";
 import { computeDailySnapshot, computeCityCounts } from "@/lib/stats/leaderboard";
 import { getCity } from "@/lib/geo";
+import { resolveActiveSkinServer } from "@/lib/skins/server";
 import type { YearSeries } from "@/lib/seal/types";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ function landingDateLabels(d: Date = new Date()): { jp: string; en: string } {
 }
 
 export default async function Home() {
+  const skin = await resolveActiveSkinServer({ surface: "home" });
   const sb = createServerClient();
   const {
     data: { session },
@@ -214,6 +216,10 @@ export default async function Home() {
 
       <main className="px-6 lg:px-24 py-10 lg:py-16 max-w-[1480px] mx-auto">
         <div className="eyebrow red">{dateLine()}</div>
+        <div className="mono text-[10px] tracking-[0.18em] uppercase text-moss mt-1">
+          vol · <strong className="text-vermillion font-medium">{skin.kanjiLabel}</strong>{" "}
+          {skin.slug.replace(/-/g, " ")} · in print
+        </div>
 
         {profileCity === null && (
           <div className="mt-6 max-w-[640px]">
@@ -234,6 +240,38 @@ export default async function Home() {
             freezePrompt={freezePrompt}
             tategakiDay={weekdayJp()}
           />
+        </div>
+
+        <div className="mt-8 max-w-[640px] border-t border-sumi/20 pt-6">
+          <div className="flex items-baseline justify-between mb-3.5">
+            <div className="eyebrow">§ casual</div>
+            <Link href="/play" className="ital text-vermillion text-[14px] hover:underline">
+              see all →
+            </Link>
+          </div>
+          <p className="ital text-moss text-[14px] mb-4">
+            — pick a floor. Your streak rests with the daily.
+          </p>
+          <div className="grid grid-cols-4 border-[1.5px] border-sumi">
+            {[
+              { k: "易", href: "/play/easy" },
+              { k: "中", href: "/play/medium" },
+              { k: "難", href: "/play/hard" },
+              { k: "極", href: "/play/expert", accent: true },
+            ].map((t, i, arr) => (
+              <Link
+                key={t.k}
+                href={t.href}
+                className={
+                  "p-4 flex items-center justify-center mincho font-semibold text-[36px] -tracking-[0.02em] transition-opacity hover:opacity-80 " +
+                  (i < arr.length - 1 ? "border-r-[1.5px] border-sumi " : "") +
+                  (t.accent ? "bg-vermillion text-bone" : "bg-bone text-sumi")
+                }
+              >
+                {t.k}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {series && (
