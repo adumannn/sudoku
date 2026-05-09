@@ -28,7 +28,18 @@ export async function POST(req: NextRequest) {
   if (body.elapsed < daily.min_seconds)
     return NextResponse.json({ error: "too-fast" }, { status: 400 });
 
-  const city = body.consentCity ? getCity() : null;
+  // City: profile-set value wins. Fall back to Vercel header for users
+  // who haven't picked a city yet, but only if they consented.
+  let city: string | null = null;
+  if (body.consentCity) {
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("city")
+      .eq("id", user.id)
+      .maybeSingle();
+    city = profile?.city ?? getCity();
+  }
+
   const { error } = await sb.from("daily_results").upsert(
     {
       date: body.date,

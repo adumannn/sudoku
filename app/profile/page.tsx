@@ -6,14 +6,24 @@ import { Masthead } from "@/components/Masthead";
 import { Heatmap } from "@/components/stats/Heatmap";
 import { AchievementsLedger } from "@/components/profile/AchievementsLedger";
 import { AchievementStamp } from "@/components/profile/AchievementStamp";
-import {
-  computeStatuses,
-  DEMO_STATUSES,
-  type GameRow,
-} from "@/lib/achievements";
+import { CityPicker } from "@/components/profile/CityPicker";
+import { computeStatuses, type GameRow } from "@/lib/achievements";
 import { computeUnifiedStreak } from "@/lib/seal/streak";
+import { computeUserHeatmap } from "@/lib/stats/heatmap";
+import { computeCityCounts } from "@/lib/stats/leaderboard";
+import { getCity } from "@/lib/geo";
 
 export const dynamic = "force-dynamic";
+
+const MONTHS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+
+function formatSince(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+}
 
 export default async function Profile() {
   const sb = createServerClient();
@@ -26,44 +36,81 @@ export default async function Profile() {
   const initial = user.email?.[0] ?? "·";
   const username = user.email?.split("@")[0] ?? "duman";
 
-  const { data: games } = await sb
-    .from("games")
-    .select(
-      "difficulty,is_complete,elapsed_seconds,errors_made,hints_used,daily_date,created_at",
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(200);
-
-  const all = (games ?? []) as GameRow[];
-  const completed = all.filter((g) => g.is_complete);
-  const byDiff = (d: string) =>
-    completed.filter((g) => g.difficulty === d);
-  const avg = (xs: number[]) =>
-    xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
-  const best = (xs: number[]) => (xs.length ? Math.min(...xs) : 0);
-
-  // Fetch daily_results and streak_freezes for unified streak (last 730 days)
   const today = todayUTC();
   const windowStart = (() => {
+    const d = new Date(today + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 181);
+    return d.toISOString().slice(0, 10);
+  })();
+  const recentWindowStart = (() => {
     const d = new Date(today + "T00:00:00Z");
     d.setUTCDate(d.getUTCDate() - 730);
     return d.toISOString().slice(0, 10);
   })();
-  const [{ data: dailyResults }, { data: streakFreezes }] = await Promise.all([
+
+  const [
+    { data: profile },
+    { data: games },
+    { data: dailyResults },
+    { data: streakFreezes },
+    { data: heatmapResults },
+    { data: heatmapMedians },
+    { data: latestDaily },
+    { data: cityRows },
+  ] = await Promise.all([
+    sb.from("profiles").select("created_at,city").eq("id", user.id).maybeSingle(),
+    sb
+      .from("games")
+      .select(
+        "difficulty,is_complete,elapsed_seconds,errors_made,hints_used,daily_date,created_at",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(200),
     sb
       .from("daily_results")
       .select("date")
       .eq("user_id", user.id)
-      .gte("date", windowStart)
+      .gte("date", recentWindowStart)
       .lte("date", today),
     sb
       .from("streak_freezes")
       .select("date")
       .eq("user_id", user.id)
+      .gte("date", recentWindowStart)
+      .lte("date", today),
+    sb
+      .from("daily_results")
+      .select("date,elapsed_seconds")
+      .eq("user_id", user.id)
       .gte("date", windowStart)
       .lte("date", today),
+    sb
+      .from("daily_results")
+      .select("date,elapsed_seconds")
+      .gte("date", windowStart)
+      .lte("date", today),
+    sb
+      .from("daily_results")
+      .select("date,elapsed_seconds,daily_puzzles(seq,difficulty)")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    sb.from("daily_results").select("city").eq("date", today),
   ]);
+
+  // Rename for clarity — this is everyone's results across the heatmap window,
+  // used to compute per-day medians.
+  const globalDaily = heatmapMedians as { date: string; elapsed_seconds: number }[] | null;
+
+  const all = (games ?? []) as GameRow[];
+  const completed = all.filter((g) => g.is_complete);
+  const byDiff = (d: string) => completed.filter((g) => g.difficulty === d);
+  const avg = (xs: number[]) =>
+    xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+  const best = (xs: number[]) => (xs.length ? Math.min(...xs) : 0);
+
   const completedDates = new Set<string>(
     ((dailyResults ?? []) as { date: string }[]).map((r) => r.date),
   );
@@ -71,6 +118,31 @@ export default async function Profile() {
     ((streakFreezes ?? []) as { date: string }[]).map((f) => f.date),
   );
   const streak = computeUnifiedStreak(today, completedDates, frozenDates);
+
+  // Heatmap data — compute medians per date in TS from the global slice.
+  const grouped = new Map<string, number[]>();
+  for (const row of globalDaily ?? []) {
+    const arr = grouped.get(row.date) ?? [];
+    arr.push(row.elapsed_seconds);
+    grouped.set(row.date, arr);
+  }
+  const mediansByDate = new Map<string, number>();
+  for (const [d, arr] of grouped) {
+    arr.sort((a, b) => a - b);
+    const mid = arr.length / 2;
+    mediansByDate.set(
+      d,
+      Number.isInteger(mid)
+        ? Math.round((arr[mid - 1] + arr[mid]) / 2)
+        : arr[Math.floor(mid)],
+    );
+  }
+  const heatmap = computeUserHeatmap({
+    today,
+    results: ((heatmapResults ?? []) as { date: string; elapsed_seconds: number }[]),
+    freezes: frozenDates,
+    mediansByDate,
+  });
 
   const totals = {
     streak,
@@ -80,7 +152,7 @@ export default async function Profile() {
     avgSecs: avg(completed.map((g) => g.elapsed_seconds)),
   };
 
-  const since = "6 february";
+  const since = profile?.created_at ? formatSince(profile.created_at) : "—";
 
   const diffs: { key: string; label: string; accent?: boolean }[] = [
     { key: "easy", label: "易 Easy" },
@@ -94,17 +166,21 @@ export default async function Profile() {
     return { best: best(xs), avg: avg(xs), count: xs.length };
   };
 
-  const statuses = completed.length > 0 ? computeStatuses(all) : DEMO_STATUSES;
+  const statuses = computeStatuses(all);
   const earnedCount = statuses.filter((s) => s.earned).length;
 
-  const recentDaily = completed
-    .filter((g) => g.daily_date)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-  const recentMs = recentDaily?.elapsed_seconds ?? 462;
-  const recentLabel =
-    recentDaily?.daily_date ?? "0469 · 4 may · hard";
-  const recentNoHints = recentDaily ? recentDaily.hints_used === 0 : true;
-  const recentNoErrors = recentDaily ? recentDaily.errors_made === 0 : true;
+  const recentDaily = latestDaily as
+    | { date: string; elapsed_seconds: number; daily_puzzles: { seq: number; difficulty: string } | null }
+    | null;
+  const recentLabel = recentDaily?.daily_puzzles
+    ? `${recentDaily.daily_puzzles.seq.toString().padStart(4, "0")} · ${recentDaily.date} · ${recentDaily.daily_puzzles.difficulty}`
+    : null;
+
+  // Popular cities for the picker.
+  const popular = computeCityCounts({
+    rows: ((cityRows ?? []) as { city: string | null }[]),
+    userCity: null,
+  });
 
   return (
     <>
@@ -118,6 +194,14 @@ export default async function Profile() {
           A solver&rsquo;s ledger.
         </h1>
 
+        <div className="mt-6">
+          <CityPicker
+            current={profile?.city ?? null}
+            suggestion={getCity()}
+            popular={popular}
+          />
+        </div>
+
         {/* Top stats row */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 border-t-2 border-b-2 border-sumi py-6">
           <div className="md:border-r border-sumi/20 md:pr-6">
@@ -125,9 +209,7 @@ export default async function Profile() {
             <div className="kdate-jp text-[60px] md:text-[72px] text-vermillion font-semibold leading-none mt-2">
               {kanjiNum(totals.streak)}
             </div>
-            <div className="txt-small mt-2">
-              {totals.streak} days
-            </div>
+            <div className="txt-small mt-2">{totals.streak} days</div>
           </div>
           <div className="md:border-r border-sumi/20 md:px-6 mt-6 md:mt-0">
             <div className="eyebrow">solved · all</div>
@@ -144,7 +226,7 @@ export default async function Profile() {
               {formatTime(Math.round(totals.avgSecs))}
             </div>
             <div className="txt-small mt-2">
-              faster than median in ала
+              {totals.solvedAll === 0 ? "no solves yet" : "across all completed games"}
             </div>
           </div>
         </div>
@@ -158,17 +240,11 @@ export default async function Profile() {
                 Half a year, mostly kept.
               </h3>
             </div>
-            <div className="mono text-[10px] tracking-[0.18em] uppercase text-moss">
-              nov · dec · jan · feb · mar · apr · may
-            </div>
           </div>
           <div className="overflow-x-auto -mx-7 px-7 lg:mx-0 lg:px-0">
-            <Heatmap weeks={26} />
+            <Heatmap days={heatmap} />
           </div>
-          <div className="mt-3.5 flex justify-between items-center mono text-[10px] tracking-[0.18em] uppercase text-moss">
-            <span>
-              2 ↻ catchups
-            </span>
+          <div className="mt-3.5 flex justify-end items-center mono text-[10px] tracking-[0.18em] uppercase text-moss">
             <div className="flex gap-1.5 items-center">
               <span className="text-[10px]">less</span>
               <span className="w-3 h-3 border-[0.5px] border-sumi/20" />
@@ -200,19 +276,18 @@ export default async function Profile() {
                       "mincho font-semibold mt-2 leading-none text-[36px] lg:text-[42px] tnum"
                     }
                   >
-                    {formatTime(stat.best)}
+                    {stat.count > 0 ? formatTime(stat.best) : "—"}
                   </div>
                   <div
                     className={
                       "text-[12.5px] mt-1.5 " +
-                      (d.accent
-                        ? "text-bone/70 font-jakarta"
-                        : "txt-small")
+                      (d.accent ? "text-bone/70 font-jakarta" : "txt-small")
                     }
                   >
-                    avg {formatTime(Math.round(stat.avg))} ·{" "}
-                    {stat.count} solved
-                    {d.accent ? " · pro" : ""}
+                    {stat.count > 0
+                      ? `avg ${formatTime(Math.round(stat.avg))} · ${stat.count} solved`
+                      : "no solves yet"}
+                    {d.accent && stat.count > 0 ? " · pro" : ""}
                   </div>
                 </div>
               );
@@ -220,7 +295,6 @@ export default async function Profile() {
           </div>
         </div>
 
-        {/* Achievements section */}
         <section className="mt-24">
           <div className="grid grid-cols-[auto_1fr_auto] gap-8 items-end border-b-[1.5px] border-sumi pb-[18px]">
             <div>
@@ -244,49 +318,32 @@ export default async function Profile() {
             </div>
           </div>
 
-          {/* Inline mark preview — recent daily with stacked stamps */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center py-6 border-t border-sumi/14 border-b border-sumi/14">
-            <div>
-              <div className="ital text-[15px] text-moss mb-1">
-                Daily № {recentLabel}
+          {recentLabel ? (
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center py-6 border-t border-sumi/14 border-b border-sumi/14">
+              <div>
+                <div className="ital text-[15px] text-moss mb-1">
+                  Daily № {recentLabel}
+                </div>
+                <div className="mincho text-[18px] font-medium text-sumi leading-snug">
+                  Solved in{" "}
+                  <span className="text-vermillion font-semibold">
+                    {formatTime(recentDaily!.elapsed_seconds)}
+                  </span>
+                </div>
               </div>
-              <div className="mincho text-[18px] font-medium text-sumi leading-snug">
-                Solved in{" "}
-                <span className="text-vermillion font-semibold">
-                  {formatTime(recentMs)}
-                </span>
-                {recentNoHints && (
-                  <>
-                    {" "}&nbsp;·&nbsp; first solve of the day, no hints used.
-                  </>
-                )}
+              <div className="flex gap-3.5">
+                <AchievementStamp glyph="完" size="small" title="completion" />
               </div>
             </div>
-            <div className="flex gap-3.5">
-              <AchievementStamp glyph="初" size="small" title="first solve of day" />
-              {recentNoHints && (
-                <AchievementStamp glyph="無" size="small" title="no hints" />
-              )}
-              {recentNoErrors && recentMs < 600 && (
-                <AchievementStamp glyph="鋭" size="small" title="sharp · sub-10:00" />
-              )}
-            </div>
-          </div>
-          <p className="ital text-moss text-[14.5px] leading-snug mt-3.5 max-w-[80ch]">
-            — marks earned during a puzzle stack to the right of its ledger
-            row. Three is the visual cap; a fourth becomes a{" "}
-            <span className="mono text-[11px] tracking-[0.04em]">+1</span> mono
-            badge.
-          </p>
+          ) : (
+            <p className="ital text-moss text-[15px] mt-8">
+              — finish a daily to begin your ledger.
+            </p>
+          )}
 
           <div className="mt-9">
             <AchievementsLedger statuses={statuses} />
           </div>
-
-          <p className="ital text-moss text-[15px] leading-snug mt-8 max-w-[80ch]">
-            — twelve marks, no two characters share a shape; none collide with
-            the difficulty markers (易 中 難 極) or the daily seal (完).
-          </p>
         </section>
       </main>
     </>
