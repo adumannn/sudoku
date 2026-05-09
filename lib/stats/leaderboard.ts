@@ -81,3 +81,31 @@ export function computeCityCounts(input: {
   }
   return sorted;
 }
+
+export interface UserStanding {
+  time: number;
+  city: string | null;
+  rankInCity: number;
+  citySize: number;
+  percentile: number;
+}
+
+export function computeUserStanding(input: {
+  userRow: { elapsed_seconds: number; city: string | null } | null;
+  cityResults: { elapsed_seconds: number }[];
+}): UserStanding | null {
+  const { userRow, cityResults } = input;
+  if (!userRow) return null;
+  const time = userRow.elapsed_seconds;
+  const fasterCount = cityResults.filter((r) => r.elapsed_seconds < time).length;
+  const rankInCity = fasterCount + 1;
+  const citySize = cityResults.length || 1;
+  const percentile = citySize === 1 ? 100 : Math.round(100 * (1 - rankInCity / citySize));
+  return {
+    time,
+    city: userRow.city ? userRow.city.trim().toLowerCase() : null,
+    rankInCity,
+    citySize,
+    percentile,
+  };
+}

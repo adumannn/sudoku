@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeDailySnapshot, computeCityCounts } from "@/lib/stats/leaderboard";
+import { computeDailySnapshot, computeCityCounts, computeUserStanding } from "@/lib/stats/leaderboard";
 
 describe("computeDailySnapshot", () => {
   it("returns nulls when no submissions exist", () => {
@@ -126,5 +126,67 @@ describe("computeCityCounts", () => {
       { city: "almaty", count: 2 },
       { city: "astana", count: 1 },
     ]);
+  });
+});
+
+describe("computeUserStanding", () => {
+  it("returns null when user has no row", () => {
+    const out = computeUserStanding({
+      userRow: null,
+      cityResults: [],
+    });
+    expect(out).toBeNull();
+  });
+
+  it("rank=1, percentile=100 when user is the sole solver", () => {
+    const out = computeUserStanding({
+      userRow: { elapsed_seconds: 200, city: "almaty" },
+      cityResults: [{ elapsed_seconds: 200 }],
+    });
+    expect(out).toEqual({
+      time: 200,
+      city: "almaty",
+      rankInCity: 1,
+      citySize: 1,
+      percentile: 100,
+    });
+  });
+
+  it("rank reflects how many users were strictly faster", () => {
+    const out = computeUserStanding({
+      userRow: { elapsed_seconds: 250, city: "almaty" },
+      cityResults: [
+        { elapsed_seconds: 100 },
+        { elapsed_seconds: 200 },
+        { elapsed_seconds: 250 },
+        { elapsed_seconds: 300 },
+      ],
+    });
+    expect(out?.rankInCity).toBe(3);
+    expect(out?.citySize).toBe(4);
+    expect(out?.percentile).toBe(25); // round(100 * (1 - 3/4))
+  });
+
+  it("ties — same time as user counts as user's tier, percentile reflects rank position", () => {
+    const out = computeUserStanding({
+      userRow: { elapsed_seconds: 200, city: "almaty" },
+      cityResults: [
+        { elapsed_seconds: 200 },
+        { elapsed_seconds: 200 },
+        { elapsed_seconds: 300 },
+      ],
+    });
+    // rankInCity = 1 + count(strictly faster) = 1 + 0 = 1
+    expect(out?.rankInCity).toBe(1);
+    expect(out?.citySize).toBe(3);
+    expect(out?.percentile).toBe(67); // round(100 * (1 - 1/3))
+  });
+
+  it("user with null city gets null city back", () => {
+    const out = computeUserStanding({
+      userRow: { elapsed_seconds: 200, city: null },
+      cityResults: [{ elapsed_seconds: 200 }],
+    });
+    expect(out?.city).toBeNull();
   });
 });
