@@ -13,7 +13,7 @@ export interface SealProps {
 const SIZES = {
   xs: { box: "text-[8px]", corner: "w-[5px] h-[5px] text-[3px] -bottom-[1px] -right-[1px]" },
   sm: { box: "text-[14px]", corner: "w-[8px] h-[8px] text-[5px] -bottom-[1px] -right-[1px]" },
-  md: { box: "text-[36px]", corner: "w-[16px] h-[16px] text-[9px] bottom-[3px] right-[3px]" },
+  md: { box: "text-[22px]", corner: "w-[12px] h-[12px] text-[7px] bottom-[1px] right-[1px]" },
   lg: { box: "text-[96px]", corner: "w-[24px] h-[24px] text-[14px] bottom-[8px] right-[8px]" },
   xl: {
     box: "text-[clamp(200px,30vw,360px)]",

@@ -506,3 +506,80 @@
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--vermillion) / 0); transform: scale(1); }
   50%      { box-shadow: 0 0 0 4px hsl(var(--vermillion) / 0.16); transform: scale(1.04); }
 }
+
+/* Vermillion brushstroke under today's heatmap cell — tapered ends, slight tilt */
+.brush-today {
+  position: relative;
+}
+.brush-today::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: -7px;
+  height: 3px;
+  background: hsl(var(--vermillion));
+  -webkit-mask: linear-gradient(90deg, transparent 0%, black 18%, black 82%, transparent 100%);
+  mask: linear-gradient(90deg, transparent 0%, black 18%, black 82%, transparent 100%);
+  transform: rotate(-1.2deg);
+  pointer-events: none;
+}
+
+/* Vertical Japanese text */
+.tategaki {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.18em;
+}
+
+/* Decorative oversized kanji as section watermark */
+.watermark-kanji {
+  position: absolute;
+  font-family: var(--font-mincho), serif;
+  color: hsl(var(--sumi) / 0.045);
+  pointer-events: none;
+  user-select: none;
+  line-height: 0.85;
+  font-weight: 500;
+}
+
+/* Carved-seal hero treatment: inset shadow on the kanji square + slight tilt on stamp */
+.hero-seal-impression {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--sumi) / 0.08),
+    inset 0 -1px 0 hsl(var(--bone));
+}
+
+/* Section rule: hairline + tiny mincho dot at the right end */
+.section-rule {
+  position: relative;
+  height: 1px;
+  background: hsl(var(--sumi) / 0.18);
+}
+.section-rule::after {
+  content: "·";
+  position: absolute;
+  right: -2px;
+  top: -10px;
+  font-family: var(--font-mincho), serif;
+  font-size: 18px;
+  color: hsl(var(--vermillion));
+  line-height: 1;
+}
+
+/* Tiny inline vermillion seal ("印") — for use next to streak labels etc */
+.inline-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: hsl(var(--vermillion));
+  color: hsl(var(--bone));
+  font-family: var(--font-mincho), serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  transform: rotate(-3deg);
+  vertical-align: middle;
+}
