@@ -485,8 +485,7 @@ export function Landing({
                   className={
                     "px-3 " +
                     (i === 0 ? "pl-0 " : "") +
-                    (i === arr.length - 1 ? "pr-0 " : "border-r border-sumi/18 ") +
-                    (i > 0 && i < arr.length - 1 ? "border-r border-sumi/18 " : "")
+                    (i === arr.length - 1 ? "pr-0 " : "border-r border-sumi/18 ")
                   }
                 >
                   <div className="mono text-[9.5px] tracking-[0.22em] uppercase text-moss mb-1">
@@ -602,18 +601,18 @@ export function Landing({
             Almaty · for nFactorial 2026
           </div>
           <div className="flex gap-[22px] items-center flex-wrap">
-            <Link href="/" className="text-moss-2 hover:text-bone">
+            <span className="text-moss-2" aria-disabled="true" title="coming soon">
               about
-            </Link>
+            </span>
             <a
               href="https://github.com/adumannn/sudoku"
               className="text-moss-2 hover:text-bone"
             >
               github
             </a>
-            <Link href="/" className="text-moss-2 hover:text-bone">
+            <span className="text-moss-2" aria-disabled="true" title="coming soon">
               privacy
-            </Link>
+            </span>
             <span className="text-moss-2">tg @hako</span>
             <span className="text-moss/60">v1.0 · {seqLabel}</span>
           </div>

@@ -172,8 +172,8 @@ export default async function Profile() {
     const d = new Date(newest.created_at);
     const iso = d.toISOString().slice(0, 10);
     if (iso !== today) return null;
-    const hh = d.getUTCHours().toString().padStart(2, "0");
-    const mm = d.getUTCMinutes().toString().padStart(2, "0");
+    const hh = d.getHours().toString().padStart(2, "0");
+    const mm = d.getMinutes().toString().padStart(2, "0");
     return `${hh}:${mm}`;
   })();
 
