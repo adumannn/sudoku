@@ -34,15 +34,60 @@ export function WinModal() {
     return () => clearTimeout(t);
   }, [isComplete]);
 
+  const fetchYear = async () => {
+    try {
+      const r = await fetch("/api/seal/year");
+      if (!r.ok) return;
+      const j = (await r.json()) as YearSeries;
+      setSeries(j);
+    } catch {}
+  };
+
+  const submitImpl = async (consentValue: boolean) => {
+    if (!dailyDate) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/daily/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: dailyDate,
+          finalState: board.map((v) => v.toString()).join(""),
+          elapsed,
+          consentCity: consentValue,
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+        await fetchYear();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Submission failed");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Auto-submit the moment the modal opens for a daily; otherwise just fetch the year for the strip.
   useEffect(() => {
-    if (!open || !dailyDate) return;
-    let cancelled = false;
-    fetch("/api/seal/year")
-      .then((r) => r.json())
-      .then((j) => { if (!cancelled) setSeries(j); })
-      .catch(() => {});
-    return () => { cancelled = true; };
+    if (!open) return;
+    if (dailyDate && !submitted && !submitting) {
+      void submitImpl(consent);
+    } else if (!dailyDate) {
+      // casual play — no submit, no series
+      return;
+    } else {
+      void fetchYear();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, dailyDate]);
+
+  const onConsentChange = (next: boolean) => {
+    setConsent(next);
+    if (submitted && dailyDate) void submitImpl(next);
+  };
 
   const contextWindow: SealEntry[] | null = (() => {
     if (!series || !dailyDate) return null;
@@ -51,41 +96,29 @@ export function WinModal() {
     const out: SealEntry[] = [];
     for (let j = -4; j <= 4; j++) {
       const idx = i + j;
-      if (idx >= 0 && idx < series.seals.length) out.push(series.seals[idx]);
+      if (idx >= 0 && idx < series.seals.length) {
+        const e = series.seals[idx];
+        // Optimistically force today to "filled" so the seal stamps even
+        // before the submit round-trip finishes.
+        if (e.date === dailyDate && e.state === "today") {
+          out.push({ ...e, state: "filled", elapsedSeconds: elapsed });
+        } else {
+          out.push(e);
+        }
+      }
     }
     return out.length === 9 ? out : null;
   })();
 
-  const filledCount = series?.seals.filter((s) => s.state === "filled" || s.state === "freeze").length ?? 0;
+  const baseFilled = series?.seals.filter((s) => s.state === "filled" || s.state === "freeze").length ?? 0;
+  const todayAlreadyFilled = !!series?.seals.find((s) => s.date === dailyDate && s.state === "filled");
+  const filledCount = baseFilled + (dailyDate && !todayAlreadyFilled ? 1 : 0);
   const totalDays = series?.seals.length ?? 365;
   const todayKanji = series?.seals.find((s) => s.date === dailyDate)?.kanji ?? "完";
 
-  const submit = async () => {
-    if (!dailyDate) return;
-    setSubmitting(true);
-    setError(null);
-    const res = await fetch("/api/daily/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: dailyDate,
-        finalState: board.map((v) => v.toString()).join(""),
-        elapsed,
-        consentCity: consent,
-      }),
-    });
-    setSubmitting(false);
-    if (res.ok) {
-      setSubmitted(true);
-    } else {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Submission failed");
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="relative overflow-hidden p-0 max-w-[480px] bg-bone border-2 border-sumi rounded-none">
+      <DialogContent className="overflow-hidden p-0 max-w-[480px] bg-bone border-2 border-sumi rounded-none">
         <div className="px-8 py-10 text-center relative">
           <div className="relative w-[88px] h-[88px] mx-auto">
             <SealWash />
@@ -129,37 +162,48 @@ export function WinModal() {
             <div className="mt-4 -mx-8">
               <ScrollContextStrip
                 window={contextWindow}
-                filledCount={filledCount + 1}
+                filledCount={filledCount}
                 totalDays={totalDays}
               />
             </div>
           )}
 
-          {dailyDate && !submitted && (
+          {dailyDate && (
             <div className="space-y-3 mt-4 text-left">
               <label className="flex items-center gap-2 text-[13px] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
+                  onChange={(e) => onConsentChange(e.target.checked)}
                   className="h-4 w-4 accent-vermillion"
                 />
                 <span>Share my city on the ledger</span>
               </label>
+              {submitting && !submitted && (
+                <div className="text-moss text-[12px] mono uppercase tracking-wider">
+                  recording…
+                </div>
+              )}
+              {submitted && (
+                <div className="text-[13px] text-moss ital">
+                  recorded ·{" "}
+                  <Link href="/leaderboard" className="underline text-vermillion not-italic">
+                    view ledger
+                  </Link>
+                </div>
+              )}
               {error && (
                 <div className="text-hazard text-[13px] mono uppercase tracking-wider">
                   {error}
+                  <button
+                    onClick={() => submitImpl(consent)}
+                    className="ml-2 underline"
+                    disabled={submitting}
+                  >
+                    retry
+                  </button>
                 </div>
               )}
-            </div>
-          )}
-
-          {dailyDate && submitted && (
-            <div className="text-[14px] text-center text-moss mt-4 ital">
-              submitted ·{" "}
-              <Link href="/leaderboard" className="underline text-vermillion">
-                view ledger
-              </Link>
             </div>
           )}
 
@@ -178,16 +222,7 @@ export function WinModal() {
                 home
               </Link>
             )}
-            {dailyDate && !submitted && (
-              <button
-                className="btn-hako red justify-center font-mincho text-[14px] py-3"
-                onClick={submit}
-                disabled={submitting}
-              >
-                {submitting ? "submitting…" : "submit time"}
-              </button>
-            )}
-            {dailyDate && submitted && (
+            {dailyDate && (
               <Link
                 href="/"
                 className="btn-hako red justify-center font-mincho text-[14px] py-3"

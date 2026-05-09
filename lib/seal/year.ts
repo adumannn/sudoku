@@ -39,10 +39,10 @@ function stateFor(
   frozen: Set<string>,
   signupDate: string,
 ): SealState {
-  if (date === today) return "today";
   if (date > today) return "future";
   if (date < signupDate) return "pre-signup";
   if (completed.has(date)) return "filled";
   if (frozen.has(date)) return "freeze";
+  if (date === today) return "today";
   return "empty";
 }

@@ -60,6 +60,19 @@ describe("assembleYearSeries", () => {
     expect(byDate["2026-05-08"].state).toBe("pre-signup");
   });
 
+  it("marks today as filled once it's been completed", () => {
+    const series = assembleYearSeries({
+      today: "2026-05-09",
+      calendar: CAL,
+      completedByDate: new Map([["2026-05-09", 712]]),
+      frozenDates: new Set(),
+      signupDate: "2026-04-01",
+    });
+    const byDate = Object.fromEntries(series.seals.map((s) => [s.date, s]));
+    expect(byDate["2026-05-09"].state).toBe("filled");
+    expect(byDate["2026-05-09"].elapsedSeconds).toBe(712);
+  });
+
   it("populates todayIndex correctly", () => {
     const series = assembleYearSeries({
       today: "2026-05-09",
