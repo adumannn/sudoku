@@ -3,12 +3,15 @@ import Link from "next/link";
 import { Masthead } from "@/components/Masthead";
 import { TodayCard } from "@/components/year-scroll/TodayCard";
 import { YearScroll } from "@/components/year-scroll/YearScroll";
+import { CityPicker } from "@/components/profile/CityPicker";
 import { createServerClient } from "@/lib/supabase/server";
-import { todayUTC } from "@/lib/utils";
+import { todayUTC, formatTime } from "@/lib/utils";
 import { computeUnifiedStreak } from "@/lib/seal/streak";
 import { computeAllotment } from "@/lib/seal/freeze";
 import { assembleYearSeries } from "@/lib/seal/year";
 import { dateLine } from "@/lib/kanji";
+import { computeDailySnapshot, computeCityCounts } from "@/lib/stats/leaderboard";
+import { getCity } from "@/lib/geo";
 import type { YearSeries } from "@/lib/seal/types";
 
 export const dynamic = "force-dynamic";
@@ -17,18 +20,6 @@ interface LedgerRow {
   user_id: string;
   elapsed_seconds: number;
   profiles: { username: string | null } | null;
-}
-
-const NAMES_FALLBACK = [
-  { rank: "01", name: "nurali", time: "02:48", first: true },
-  { rank: "02", name: "aigerim", time: "02:54", first: false },
-  { rank: "03", name: "dauren", time: "03:01", first: false },
-];
-
-function formatHMS(secs: number) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 export default async function Home() {
@@ -67,6 +58,7 @@ export default async function Home() {
   let streak = 0;
   let completedTodayElapsed: number | undefined;
   let freezePrompt: { date: string; kanji: string; remaining: number } | null = null;
+  let profileCity: string | null = null;
   if (user) {
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
@@ -83,8 +75,9 @@ export default async function Home() {
         sb.from("streak_freezes").select("date")
           .eq("user_id", user.id)
           .gte("date", yearStart).lte("date", yearEnd),
-        sb.from("profiles").select("created_at,is_pro").eq("id", user.id).maybeSingle(),
+        sb.from("profiles").select("created_at,is_pro,city").eq("id", user.id).maybeSingle(),
       ]);
+    profileCity = profile?.city ?? null;
     const completedByDate = new Map<string, number>();
     for (const r of (results ?? []) as { date: string; elapsed_seconds: number }[]) {
       completedByDate.set(r.date, r.elapsed_seconds);
@@ -103,7 +96,6 @@ export default async function Home() {
     streak = computeUnifiedStreak(today, new Set(completedByDate.keys()), frozen);
     completedTodayElapsed = completedByDate.get(today);
 
-    // Yesterday-missed-and-Pro freeze prompt
     if (profile?.is_pro) {
       const yest = new Date(today + "T00:00:00Z");
       yest.setUTCDate(yest.getUTCDate() - 1);
@@ -124,25 +116,61 @@ export default async function Home() {
     }
   }
 
-  // Ledger preview (existing logic)
-  let preview: { rank: string; name: string; time: string; first: boolean }[] = NAMES_FALLBACK;
-  try {
-    const { data } = await sb
+  // Daily snapshot — used for "global pace · today" and ledger preview.
+  const [
+    { data: dailyPuzzle },
+    { data: snapshotRows },
+    { count: activeGames },
+  ] = await Promise.all([
+    sb.from("daily_puzzles").select("seq").eq("date", today).maybeSingle(),
+    sb
       .from("daily_results")
-      .select("user_id,elapsed_seconds,profiles(username)")
+      .select("user_id,elapsed_seconds,city,created_at,profiles(username)")
       .eq("date", today)
-      .order("elapsed_seconds", { ascending: true })
-      .limit(3);
-    const rows = (data ?? []) as unknown as LedgerRow[];
-    if (rows.length) {
-      preview = rows.map((r, i) => ({
-        rank: (i + 1).toString().padStart(2, "0"),
-        name: r.profiles?.username ?? "anon",
-        time: formatHMS(r.elapsed_seconds),
-        first: i === 0,
-      }));
-    }
-  } catch {}
+      .order("elapsed_seconds", { ascending: true }),
+    sb
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("is_complete", false)
+      .gte("updated_at", new Date(Date.now() - 15 * 60 * 1000).toISOString()),
+  ]);
+
+  type Row = {
+    user_id: string;
+    elapsed_seconds: number;
+    city: string | null;
+    created_at: string;
+    profiles: { username: string | null } | null;
+  };
+  const rows = (snapshotRows ?? []) as unknown as Row[];
+  const snapshot = computeDailySnapshot({
+    seq: dailyPuzzle?.seq ?? null,
+    results: rows.map((r) => ({
+      user_id: r.user_id,
+      username: r.profiles?.username ?? "anon",
+      elapsed_seconds: r.elapsed_seconds,
+      city: r.city,
+      created_at: r.created_at,
+    })),
+    activeGamesCount: activeGames ?? 0,
+  });
+  const preview = rows.slice(0, 3).map((r, i) => ({
+    rank: (i + 1).toString().padStart(2, "0"),
+    name: r.profiles?.username ?? "anon",
+    time: formatTime(r.elapsed_seconds),
+    first: i === 0,
+  }));
+
+  // Popular city list for the home banner picker.
+  let popularCities: { city: string; count: number }[] = [];
+  let citySuggestion: string | null = null;
+  if (user && profileCity === null) {
+    popularCities = computeCityCounts({
+      rows: rows.map((r) => ({ city: r.city })),
+      userCity: null,
+    });
+    citySuggestion = getCity();
+  }
 
   return (
     <>
@@ -150,6 +178,17 @@ export default async function Home() {
 
       <main className="px-6 lg:px-24 py-10 lg:py-16 max-w-[1480px] mx-auto">
         <div className="eyebrow red">{dateLine()}</div>
+
+        {user && profileCity === null && (
+          <div className="mt-6 max-w-[640px]">
+            <CityPicker
+              variant="banner"
+              current={null}
+              suggestion={citySuggestion}
+              popular={popularCities}
+            />
+          </div>
+        )}
 
         <div className="mt-6 max-w-[640px]">
           <TodayCard
@@ -181,15 +220,27 @@ export default async function Home() {
             </p>
             <div className="mt-2.5 flex flex-wrap gap-x-8 gap-y-4">
               <div>
-                <div className="kdate-jp text-2xl font-semibold tnum">02:48</div>
-                <div className="txt-small">first solve · nurali, ала</div>
+                <div className="kdate-jp text-2xl font-semibold tnum">
+                  {snapshot.firstSolve ? formatTime(snapshot.firstSolve.elapsedSeconds) : "—"}
+                </div>
+                <div className="txt-small">
+                  {snapshot.firstSolve
+                    ? `first solve · ${snapshot.firstSolve.username}${
+                        snapshot.firstSolve.city ? ", " + snapshot.firstSolve.city : ""
+                      }`
+                    : "awaiting first solve"}
+                </div>
               </div>
               <div className="sm:border-l sm:border-sumi sm:pl-6">
-                <div className="kdate-jp text-2xl font-semibold tnum">14:52</div>
+                <div className="kdate-jp text-2xl font-semibold tnum">
+                  {snapshot.median != null ? formatTime(snapshot.median) : "—"}
+                </div>
                 <div className="txt-small">global median</div>
               </div>
               <div className="sm:border-l sm:border-sumi sm:pl-6">
-                <div className="kdate-jp text-2xl font-semibold tnum">2,184</div>
+                <div className="kdate-jp text-2xl font-semibold tnum">
+                  {snapshot.solvingNow.toLocaleString()}
+                </div>
                 <div className="txt-small">solving now</div>
               </div>
             </div>
@@ -197,29 +248,35 @@ export default async function Home() {
 
           <div>
             <div className="flex justify-between items-baseline mb-3.5">
-              <div className="eyebrow">ledger · ала today</div>
+              <div className="eyebrow">ledger · today</div>
               <Link href="/leaderboard" className="ital text-vermillion text-[14px] hover:underline">
                 see all →
               </Link>
             </div>
-            <div>
-              {preview.map((row) => (
-                <div
-                  key={row.rank}
-                  className="grid grid-cols-[28px_1fr_auto] gap-3.5 py-2.5 border-b border-sumi/12"
-                >
-                  <div className={"kdate-jp text-[13px] " + (row.first ? "text-vermillion" : "text-moss")}>
-                    {row.rank}
+            {preview.length === 0 ? (
+              <p className="ital text-moss text-[14px] py-4 border-t-2 border-sumi">
+                — the ledger fills as solvers finish today's box.
+              </p>
+            ) : (
+              <div>
+                {preview.map((row) => (
+                  <div
+                    key={row.rank}
+                    className="grid grid-cols-[28px_1fr_auto] gap-3.5 py-2.5 border-b border-sumi/12"
+                  >
+                    <div className={"kdate-jp text-[13px] " + (row.first ? "text-vermillion" : "text-moss")}>
+                      {row.rank}
+                    </div>
+                    <div className="text-[14px]">{row.name}</div>
+                    <div className="mincho text-[15px] font-semibold tnum">{row.time}</div>
                   </div>
-                  <div className="text-[14px]">{row.name}</div>
-                  <div className="mincho text-[15px] font-semibold tnum">{row.time}</div>
+                ))}
+                <div className="text-center py-3.5 ital text-moss text-[14px]">
+                  <span className="text-vermillion mr-1">↘</span>
+                  your name lands when you finish.
                 </div>
-              ))}
-              <div className="text-center py-3.5 ital text-moss text-[14px]">
-                <span className="text-vermillion mr-1">↘</span>
-                your name lands when you finish.
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
