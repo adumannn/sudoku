@@ -170,7 +170,7 @@ export function AnimatedHeroBoard({ seqLabel }: AnimatedHeroBoardProps): JSX.Ele
     }
 
     const el = containerRef.current;
-    if (!el) return clearTimers;
+    if (!el) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -181,7 +181,7 @@ export function AnimatedHeroBoard({ seqLabel }: AnimatedHeroBoardProps): JSX.Ele
             } else if (cycleStateRef.current === "rest" && armReplayRef.current) {
               play();
             }
-          } else if (cycleStateRef.current === "rest") {
+          } else {
             armReplayRef.current = true;
           }
         }
