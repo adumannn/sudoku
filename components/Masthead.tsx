@@ -82,6 +82,14 @@ function AvatarDropdown({
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="rounded-none focus:bg-rice cursor-pointer">
           <Link
+            href="/account"
+            className="mincho text-[14px] text-sumi px-3 py-2.5 block"
+          >
+            Account
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="rounded-none focus:bg-rice cursor-pointer">
+          <Link
             href="/achievements"
             className="mincho text-[14px] text-sumi px-3 py-2.5 block"
           >
