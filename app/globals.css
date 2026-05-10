@@ -605,12 +605,96 @@
   }
 }
 
+.solve-ink-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.solve-ink-wash::before {
+  content: "";
+  position: absolute;
+  inset: -8% -22%;
+  background:
+    linear-gradient(
+      270deg,
+      transparent 0%,
+      hsl(var(--vermillion) / 0.06) 34%,
+      hsl(var(--vermillion) / 0.14) 50%,
+      hsl(var(--vermillion) / 0.06) 66%,
+      transparent 100%
+    );
+  transform: translateX(62%) skewX(-8deg);
+  animation: hako-solve-wash 600ms ease-out both;
+}
+
+.solve-details {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.solve-details-visible {
+  animation: hako-solve-details 240ms ease-out both;
+}
+
+.solve-check {
+  opacity: 0;
+  transform: rotate(-20deg) scale(1.4);
+}
+
+.solve-check-visible {
+  animation: hako-solve-check 220ms ease-out both;
+}
+
+@keyframes hako-solve-wash {
+  from {
+    opacity: 0;
+    transform: translateX(62%) skewX(-8deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-62%) skewX(-8deg);
+  }
+}
+
+@keyframes hako-solve-details {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hako-solve-check {
+  to {
+    opacity: 1;
+    transform: rotate(-6deg) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .seal-stamp-vfx {
     transform: none;
   }
 
   .seal-stamp-vfx-mounted {
+    animation: hako-seal-fade 180ms ease-out both;
+  }
+
+  .solve-ink-wash {
+    display: none;
+  }
+
+  .solve-details,
+  .solve-check {
+    transform: none;
+  }
+
+  .solve-details-visible,
+  .solve-check-visible {
     animation: hako-seal-fade 180ms ease-out both;
   }
 

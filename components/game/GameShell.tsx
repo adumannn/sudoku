@@ -185,6 +185,7 @@ export function GameShell({
     (puzzle.id ?? "0000").slice(0, 4) + " · seed";
 
   const [senseiOpen, setSenseiOpen] = useState(false);
+  const [showSolveWash, setShowSolveWash] = useState(false);
 
   useEffect(() => {
     if (!senseiOpen) return;
@@ -199,6 +200,16 @@ export function GameShell({
     if (running) pause();
     else resumeTimer();
   };
+
+  useEffect(() => {
+    if (!isComplete) {
+      setShowSolveWash(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowSolveWash(true), 100);
+    return () => window.clearTimeout(timer);
+  }, [isComplete]);
 
   return (
     <>
@@ -250,7 +261,10 @@ export function GameShell({
 
           {/* CENTER: board */}
           <div className="max-w-[min(100vw-32px,640px)] lg:max-w-[640px] w-full mx-auto">
-            <Board />
+            <div className="relative">
+              <Board />
+              {showSolveWash && <div className="solve-ink-wash" aria-hidden />}
+            </div>
 
             {/* Keyboard shortcuts under board (desktop only — mobile has the bottom rail) */}
             <div className="hidden lg:flex mt-4 flex-wrap justify-between gap-x-4 gap-y-2 mono text-[10px] tracking-[0.18em] uppercase text-moss">
