@@ -24,6 +24,8 @@ interface MastheadProps {
   gameTitle?: string;
   timer?: React.ReactNode;
   solvedCount?: { filled: number; total: number };
+  /** Additional chip rendered in the masthead's right cluster (default variant only). */
+  rightChip?: React.ReactNode;
   /** Game variant: callback for the mobile sensei trigger. */
   onSensei?: () => void;
 }
@@ -116,6 +118,7 @@ export function Masthead({
   gameTitle,
   timer,
   solvedCount,
+  rightChip,
   onSensei,
 }: MastheadProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -208,6 +211,7 @@ export function Masthead({
           </nav>
         </div>
         <div className="flex items-center gap-[16px] md:gap-[22px] text-[13px] text-moss">
+          {rightChip}
           {email ? (
             <AvatarDropdown initial={initial} email={email} />
           ) : (
