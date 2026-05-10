@@ -83,7 +83,7 @@ export function TodayCard({
 
         <div className="w-full max-w-[400px] aspect-square mx-auto lg:mx-0 hero-seal-impression">
           <Seal
-            kanji={today.sealKanji}
+            kanji={today.kanji}
             state={stamped ? "filled" : "today"}
             size="xl"
           />

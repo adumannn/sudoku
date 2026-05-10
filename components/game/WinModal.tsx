@@ -141,7 +141,9 @@ export function WinModal({ signedIn = false, dailyKanji = null }: WinModalProps)
   const todayAlreadyFilled = !!series?.seals.find((s) => s.date === dailyDate && s.state === "filled");
   const filledCount = baseFilled + (dailyDate && !todayAlreadyFilled ? 1 : 0);
   const totalDays = series?.seals.length ?? 365;
-  const todayKanji = skin.sealKanji;
+  // Daily solve: stamp the day's actual character (膝). Casual solve: fall back
+  // to the skin's signature so the modal still has a stamped seal.
+  const todayKanji = dailyKanji?.kanji ?? skin.sealKanji;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -174,10 +176,9 @@ export function WinModal({ signedIn = false, dailyKanji = null }: WinModalProps)
           </p>
 
           {dailyDate && dailyKanji && (
-            <div className="mt-5">
+            <div className="mt-4">
               <div className="eyebrow">earned today</div>
-              <div className="kdate-jp text-[48px] leading-none mt-2">{dailyKanji.kanji}</div>
-              <div className="ital text-moss text-[14px] mt-2">
+              <div className="ital text-moss text-[14px] mt-1">
                 {dailyKanji.romaji} · {dailyKanji.meaning}
               </div>
             </div>
