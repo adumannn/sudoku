@@ -22,6 +22,7 @@ export function SealStamp({
 
   return (
     <div
+      role="img"
       aria-label={`seal ${kanji}`}
       aria-live={ariaLive}
       className={cn(
