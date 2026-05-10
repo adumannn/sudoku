@@ -27,7 +27,7 @@ The actual game already has `.hako-cell.ink-place` (ink-bleed + digit scale-in) 
 
 - **Pace:** medium — 250ms between placements. Confident, not glacial.
 - **Order:** hand-tuned `FILL_QUEUE` that jumps between 3×3 boxes the way constraint propagation does. Not row-scan.
-- **Seal:** vermillion `完`, ~88px, rotated 8°, lands center-right-ish over the grid. Single entrance, no pulse.
+- **Seal:** vermillion `完`, ~140px, rotated 8°, lands centered over the grid. Single entrance, no pulse.
 - **No chrome:** no cursor, no hint UI, no sound — the page principle is "quiet."
 
 ## Architecture
@@ -53,11 +53,11 @@ Client component (`"use client"`). Exports a default `AnimatedHeroBoard` compone
 Add one new keyframe at the bottom of the `@layer components` block, near the existing `hako-ink-*` family:
 
 ```css
-.hako-seal-stamp {
-  animation: hako-seal-stamp 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.hako-hero-seal {
+  animation: hako-hero-seal 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes hako-seal-stamp {
+@keyframes hako-hero-seal {
   from {
     opacity: 0;
     transform: rotate(2deg) scale(1.35);
@@ -69,7 +69,7 @@ Add one new keyframe at the bottom of the `@layer components` block, near the ex
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hako-seal-stamp { animation: none; }
+  .hako-hero-seal { animation: none; }
 }
 ```
 
@@ -110,7 +110,7 @@ For the final cell (index `FILL_QUEUE.length - 1`): the class stays applied thro
 | 0 | Mount or replay: `placedCount = 0`, `sealVisible = false`. Givens + START_PLACED visible. |
 | 250·n | nth cell placed (n runs 1..36). First cell at t=250, 36th cell at t=9000. |
 | 9000 | Last cell placed. `placedCount = 36`. |
-| 9500 | Seal becomes visible (~500ms after last digit settles). `.hako-seal-stamp` runs for 380ms. |
+| 9500 | Seal becomes visible (~500ms after last digit settles). `.hako-hero-seal` runs for 380ms. |
 | 9880+ | Rest state. No further motion. |
 
 If `prefers-reduced-motion`: skip directly to the t=9880 state on mount (full grid + seal, no transitions).
@@ -156,7 +156,7 @@ Final values shown at rest: "**81** placed · conflicts **0** · **0** to go".
 
 - `components/landing/AnimatedHeroBoard.tsx` — new.
 - `components/landing/Landing.tsx` — remove local `HeroBoard` and counter strip; render `<AnimatedHeroBoard />` in their place.
-- `app/globals.css` — add `.hako-seal-stamp` class + keyframe + reduced-motion override.
+- `app/globals.css` — add `.hako-hero-seal` class + keyframe + reduced-motion override.
 
 ## Test plan
 
