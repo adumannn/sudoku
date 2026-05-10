@@ -5,10 +5,13 @@ export type Technique =
   | "naked-pair" | "hidden-pair" | "x-wing";
 
 export interface Hint {
-  index: number;
-  value: number;
+  index: number;            // anchor cell (0-80) — the cell the UI highlights and the hint speaks about
+  value: number | null;     // digit central to the technique; null for naked-pair (involves two)
   technique: Technique;
+  unit: string;             // human label, e.g. "row 5", "column 3", "box 7"
+  cells: number[];          // supporting cells (empty for naked-single; the two paired cells for naked-pair; in-box candidate cells for locked-candidate)
   reason: string;
+  redirect?: boolean;       // true when the hint applies to a different cell than the user's selection
 }
 
 export function candidates(b: Board, i: number): number[] {
@@ -48,7 +51,16 @@ export function findHint(b: Board): Hint | null {
   for (let i = 0; i < 81; i++) {
     if (b[i]) continue;
     const cs = candidates(b, i);
-    if (cs.length === 1) return { index: i, value: cs[0], technique: "naked-single", reason: `Cell ${cellName(i)} has only one possible digit (${cs[0]}).` };
+    if (cs.length === 1) {
+      return {
+        index: i,
+        value: cs[0],
+        technique: "naked-single",
+        unit: `cell ${cellName(i)}`,
+        cells: [],
+        reason: `Cell ${cellName(i)} has only one possible digit (${cs[0]}).`,
+      };
+    }
   }
   // 2. Hidden single — only one cell in a unit can hold a digit
   for (const unit of allUnits) {
@@ -57,7 +69,14 @@ export function findHint(b: Board): Hint | null {
       const candidatesInUnit = unit.filter((i) => !b[i] && candidates(b, i).includes(v));
       if (candidatesInUnit.length === 1) {
         const i = candidatesInUnit[0];
-        return { index: i, value: v, technique: "hidden-single", reason: `In this ${unitKind(unit)}, only ${cellName(i)} can hold ${v}.` };
+        return {
+          index: i,
+          value: v,
+          technique: "hidden-single",
+          unit: unitKind(unit),
+          cells: unit.filter((j) => !b[j] && j !== i),
+          reason: `In this ${unitKind(unit)}, only ${cellName(i)} can hold ${v}.`,
+        };
       }
     }
   }
