@@ -299,6 +299,21 @@
     }
   }
 
+  .hako-hero-seal {
+    animation: hako-hero-seal 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes hako-hero-seal {
+    from {
+      opacity: 0;
+      transform: rotate(2deg) scale(1.35);
+    }
+    to {
+      opacity: 1;
+      transform: rotate(8deg) scale(1);
+    }
+  }
+
   /* Numpad keys */
   .nk-d {
     aspect-ratio: 1 / 1;
@@ -706,6 +721,10 @@
 
   .hako-cell.ink-place::after {
     opacity: 0;
+  }
+
+  .hako-hero-seal {
+    animation: none;
   }
 }
 
