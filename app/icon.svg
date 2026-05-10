@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" role="img" aria-label="Hako">
+  <rect width="168" height="168" rx="36" ry="36" fill="hsl(10, 72%, 48%)"/>
+  <rect x="2" y="2" width="164" height="164" rx="34" ry="34"
+        fill="none" stroke="hsl(40, 38%, 88%)" stroke-width="4"/>
+  <text x="84" y="84" text-anchor="middle" dominant-baseline="central"
+        font-family="'Shippori Mincho','Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif"
+        font-weight="700" font-size="108" fill="hsl(40, 38%, 88%)">箱</text>
+</svg>
