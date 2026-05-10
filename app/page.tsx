@@ -54,22 +54,6 @@ export default async function Home() {
   ]);
   const user = viewer.userId ? { id: viewer.userId, email: viewer.email } : null;
 
-  // Resolve skin and (when signed in) prefetch profiles.city in parallel.
-  // The city read is only needed on the signed-in branch; signed-out callers
-  // skip the extra DB round-trip entirely.
-  const sb = createServerClient();
-  const [skin, profileForCity] = await Promise.all([
-    resolveActiveSkinServer({ surface: "home", viewer }),
-    user
-      ? sb
-          .from("profiles")
-          .select("city")
-          .eq("id", user.id)
-          .maybeSingle()
-          .then((r) => r.data)
-      : Promise.resolve(null),
-  ]);
-
   const todaySeal = sealBundle.cal
     ? {
         date: sealBundle.cal.date,
@@ -115,10 +99,19 @@ export default async function Home() {
   // signed-in path
   const initial = user.email?.[0] ?? "·";
 
-  // profileCity was prefetched alongside skin resolution above; reuse it
-  // for the City picker which renders synchronously above the Suspense
-  // boundary. fetchHomeYearData also fetches this row, but inside the
-  // Suspense child — we need it earlier here.
+  // Resolve skin and prefetch profiles.city in parallel — both are only
+  // needed on the signed-in branch, so we keep them off the signed-out
+  // path's critical render.
+  const sb = createServerClient();
+  const [skin, profileForCity] = await Promise.all([
+    resolveActiveSkinServer({ surface: "home", viewer }),
+    sb
+      .from("profiles")
+      .select("city")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then((r) => r.data),
+  ]);
   const profileCity: string | null = profileForCity?.city ?? null;
 
   // Popular city list for the home banner picker (signed-in only).

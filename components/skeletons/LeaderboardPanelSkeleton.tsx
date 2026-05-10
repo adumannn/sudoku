@@ -3,7 +3,10 @@ import { SkeletonBox } from "@/components/skeletons/SkeletonBox";
 /** City rail + ledger table (20 rows of placeholders). */
 export function LeaderboardPanelSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] max-w-[1480px] mx-auto">
+    <div
+      aria-hidden="true"
+      className="grid grid-cols-1 lg:grid-cols-[280px_1fr] max-w-[1480px] mx-auto"
+    >
       <aside className="border-r border-sumi/15 lg:border-r-2 lg:border-r-sumi p-7 lg:p-9">
         <div className="eyebrow mb-3.5">solving in</div>
         <SkeletonBox className="h-9 w-32" />
