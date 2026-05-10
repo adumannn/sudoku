@@ -46,6 +46,7 @@ function addDays(iso: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Gregorian leap-year rule: divisible by 4, except centuries unless divisible by 400. */
 function isLeapYear(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 }
