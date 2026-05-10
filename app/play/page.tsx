@@ -34,8 +34,8 @@ export default async function CasualLanding() {
           Pick a floor<span className="text-vermillion">.</span>
         </h1>
         <p className="mt-[18px] text-[14.5px] leading-[1.6] text-moss max-w-[40ch]">
-          Casual draws from the puzzle library — your streak rests with the daily.
-          These don&rsquo;t move it.
+          Pick any floor. Casual won&rsquo;t touch your streak — only the daily
+          does.
         </p>
 
         <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 border-[1.5px] border-sumi">

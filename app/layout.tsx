@@ -43,7 +43,7 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Hako 箱 — a quieter sudoku",
   description:
-    "A paper-and-ink sudoku. One box a day, one streak, no upsell ladder.",
+    "A paper-and-ink sudoku. One box a day, one streak, nothing else.",
 };
 
 export const viewport: Viewport = {

@@ -66,17 +66,16 @@ export default async function Pro() {
           box.
         </h2>
         <p className="ital text-bone/65 text-[18px] md:text-[20px] mt-4 leading-[1.45]">
-          Three things, no upsell ladder, no monthly drip.
+          Three things. Nothing else.
         </p>
 
         <ul className="list-none p-0 mt-12 text-left">
           <li className="pro-bn">
             <div className="pro-bk">先</div>
             <div>
-              <div className="pro-bt">The coach, unlimited.</div>
+              <div className="pro-bt">Unlimited coach.</div>
               <div className="pro-bd">
-                Free tier: 3 nudges per puzzle. Pro: ask as many times as you
-                want.
+                Ask as often as you want.
               </div>
             </div>
           </li>
@@ -85,17 +84,16 @@ export default async function Pro() {
             <div>
               <div className="pro-bt">Expert &amp; archive.</div>
               <div className="pro-bd">
-                極 difficulty plus every past Daily, browsable by date.
+                極 difficulty, plus every past Daily.
               </div>
             </div>
           </li>
           <li className="pro-bn last">
             <div className="pro-bk">完</div>
             <div>
-              <div className="pro-bt">The full skin library.</div>
+              <div className="pro-bt">Every skin.</div>
               <div className="pro-bd">
-                Every season skin, every premium edition. Yours while you&rsquo;re a member;
-                one-off purchases stay yours forever.
+                The full library, yours while you&rsquo;re a member.
               </div>
             </div>
           </li>
@@ -107,9 +105,6 @@ export default async function Pro() {
           </span>
           <span className="mono text-[12px] tracking-[0.2em] text-bone/65 uppercase">
             / month · 月
-          </span>
-          <span className="ital text-bone/65 text-[15px] ml-2">
-            or $36 / year
           </span>
         </div>
 

@@ -45,8 +45,8 @@ export default async function Achievements() {
         </div>
 
         <p className="ital text-[16px] text-moss leading-snug max-w-[60ch] mt-6">
-          — twelve marks a serious solver might collect. Earned and locked sit
-          next to each other; two specials stay hidden until you find them.
+          — twelve marks worth chasing. Earned and locked sit side by side; two
+          stay hidden until you find them.
         </p>
 
         <Suspense fallback={<AchievementsBodySkeleton />}>

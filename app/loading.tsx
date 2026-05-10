@@ -31,7 +31,7 @@ export default function Loading() {
             </Link>
           </div>
           <p className="ital text-moss text-[14px] mb-4">
-            — pick a floor. Your streak rests with the daily.
+            — pick a floor. Only the daily moves the streak.
           </p>
           <div className="grid grid-cols-4 border-[1.5px] border-sumi">
             {CASUAL_TIERS.map((t, i, arr) => (

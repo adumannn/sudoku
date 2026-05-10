@@ -20,7 +20,7 @@ export default function Signup() {
             today.
           </h2>
           <p className="ital text-moss text-[18px] lg:text-[22px] mt-4 leading-[1.4] max-w-[32ch]">
-            One box a day. One streak. No upsell ladder.
+            One box a day. One streak. Nothing else.
           </p>
         </div>
         <p className="mono text-[10px] tracking-[0.22em] text-moss uppercase">
@@ -44,7 +44,7 @@ export default function Signup() {
           始
         </div>
         <p className="ital text-moss text-[16px] leading-[1.45] absolute bottom-12 left-12 right-12">
-          — first box waits inside. the seal lands when you finish.
+          — your first box waits. the seal lands when you finish.
         </p>
       </div>
     </main>

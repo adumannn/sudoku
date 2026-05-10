@@ -172,9 +172,9 @@ export function Landing({
             </h1>
 
             <p className="mt-8 max-w-[46ch] text-[18px] leading-[1.55] text-sumi">
-              A new sudoku, opened once a day. Twelve to twenty quiet minutes.{" "}
+              A new sudoku every day. Twelve to twenty minutes, no rush.{" "}
               <span className="ital text-moss">
-                The seal prints when you finish — never before.
+                The seal prints when you finish — not before.
               </span>
             </p>
 
@@ -282,11 +282,10 @@ export function Landing({
             title: "Quiet",
             body: (
               <>
-                No streak-saver pop-ups, no ads, no &ldquo;you might also
-                like.&rdquo; Two type families, one accent. The product never
-                raises its voice.{" "}
+                No streak-saver pop-ups, no ads, no upsell. Two type families,
+                one accent — the whole palette.{" "}
                 <em className="ital text-vermillion-deep">
-                  If you miss a day, the streak just resets.
+                  Miss a day and the streak resets. That&rsquo;s it.
                 </em>
               </>
             ),
@@ -297,10 +296,10 @@ export function Landing({
             title: "Daily",
             body: (
               <>
-                One puzzle a day, the same one for everyone. It unlocks at
-                midnight in your timezone and stays open for thirty hours.{" "}
+                One puzzle, same for everyone. Unlocks at midnight in your
+                timezone, open for thirty hours.{" "}
                 <em className="ital text-vermillion-deep">Casual mode</em> is
-                always there if you want more.
+                right there when you want more.
               </>
             ),
           },
@@ -313,7 +312,7 @@ export function Landing({
                 The 完 seal prints once, off-axis, the moment the grid resolves.
                 No confetti, no toast, no level-up.{" "}
                 <em className="ital text-vermillion-deep">
-                  You earn the mark; you do not chase it.
+                  The mark is earned, not chased.
                 </em>
               </>
             ),
@@ -353,9 +352,9 @@ export function Landing({
             <span className="text-vermillion">.</span>
           </h2>
           <p className="mt-[18px] text-[14.5px] leading-[1.6] text-moss max-w-[34ch]">
-            Same engine, same number-pad, same coach — only the floor moves.{" "}
-            <em className="ital text-vermillion-deep">Expert</em> is opt-in;
-            daily is always Hard.
+            Same engine, same coach — only the floor moves.{" "}
+            <em className="ital text-vermillion-deep">Expert</em> is opt-in.
+            Daily is always Hard.
           </p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 border-[1.5px] border-sumi">
@@ -428,10 +427,9 @@ export function Landing({
             not chatbot.
           </h2>
           <p className="text-[15.5px] leading-[1.6] mt-[18px] max-w-[42ch] text-sumi">
-            An AI that never says the answer. It points at{" "}
-            <em className="ital">where</em> to look, in one or two sentences, in
-            the language of solving. Asking for a nudge feels like reading over
-            a master&rsquo;s shoulder.
+            An AI that never gives the answer. One or two sentences, pointing at{" "}
+            <em className="ital">where</em> to look — in the language of
+            solving, not chatbot small talk.
           </p>
 
           <div className="mt-8 bg-rice border-[1.5px] border-sumi p-[22px]">
@@ -477,10 +475,10 @@ export function Landing({
             one seal.
           </h2>
           <p className="text-[15.5px] leading-[1.6] mt-[18px] max-w-[42ch] text-moss-2">
-            The minute the grid resolves, an ink stroke completes the puzzle
-            and the <em className="ital text-bone">完</em> seal stamps off-axis
-            on top of it. <em className="ital text-bone">Time is read, not
-            displayed.</em> The stats sit below, like a deed in a ledger.
+            The grid resolves. An ink stroke closes it; the{" "}
+            <em className="ital text-bone">完</em> seal stamps off-axis on top.{" "}
+            <em className="ital text-bone">Your time is written, not flashed.</em>{" "}
+            Stats sit underneath — quiet, final.
           </p>
 
           <div className="relative mt-8 bg-bone text-sumi p-7 border-[1.5px] border-sumi">
@@ -539,7 +537,7 @@ export function Landing({
             <span className="text-vermillion">.</span>
           </h2>
           <p className="mt-3.5 text-[14px] leading-[1.6] text-moss max-w-[32ch]">
-            — streaks, speed, and six rare ones. Two stay hidden until you earn
+            — streaks, speed, six rare ones. Two stay hidden until you find
             them.
           </p>
           <Link
@@ -596,7 +594,7 @@ export function Landing({
               <strong className="mincho not-italic font-semibold text-bone">
                 00:00
               </strong>{" "}
-              wherever you are. Free, no account needed; sign in to keep a
+              wherever you are. Free, no account needed. Sign in to keep a
               streak.
             </p>
           </div>

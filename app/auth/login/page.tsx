@@ -21,7 +21,7 @@ export default function Login() {
             back.
           </h2>
           <p className="ital text-moss text-[18px] lg:text-[22px] mt-4 leading-[1.4] max-w-[32ch]">
-            Pick up your streak where you left it. Nothing has changed.
+            Pick up where you left off. The streak&rsquo;s still yours.
           </p>
         </div>
         <p className="mono text-[10px] tracking-[0.22em] text-moss uppercase">
@@ -47,8 +47,8 @@ export default function Login() {
           完
         </div>
         <p className="ital text-moss text-[16px] leading-[1.45] absolute bottom-12 left-12 right-12">
-          — your streak waits where you left it. nothing leaves the page until
-          you log in.
+          — your streak&rsquo;s right where you left it. nothing moves until
+          you sign in.
         </p>
       </div>
     </main>
