@@ -90,6 +90,65 @@ function normalize(samples: Float32Array, peak = 0.95): Float32Array {
   return out;
 }
 
+function writeWav(samples: Float32Array, filePath: string): void {
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const byteRate = (SAMPLE_RATE * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const dataSize = samples.length * (bitsPerSample / 8);
+  const buffer = Buffer.alloc(44 + dataSize);
+
+  buffer.write("RIFF", 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write("WAVE", 8);
+  buffer.write("fmt ", 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(numChannels, 22);
+  buffer.writeUInt32LE(SAMPLE_RATE, 24);
+  buffer.writeUInt32LE(byteRate, 28);
+  buffer.writeUInt16LE(blockAlign, 32);
+  buffer.writeUInt16LE(bitsPerSample, 34);
+  buffer.write("data", 36);
+  buffer.writeUInt32LE(dataSize, 40);
+
+  for (let i = 0; i < samples.length; i++) {
+    const clamped = Math.max(-1, Math.min(1, samples[i]));
+    buffer.writeInt16LE(Math.round(clamped * 32767), 44 + i * 2);
+  }
+
+  fs.writeFileSync(filePath, buffer);
+}
+
+function encodeMp3(wavPath: string, mp3Path: string): void {
+  // Encode to a temp .mp3 first, then rename — so a mid-encode failure
+  // can't leave a truncated file at the destination path.
+  const tmpMp3 = path.join(os.tmpdir(), `sudoku-sfx-${path.basename(mp3Path)}.tmp.mp3`);
+  const result = spawnSync(
+    "ffmpeg",
+    ["-y", "-i", wavPath, "-codec:a", "libmp3lame", "-b:a", "128k", "-ac", "1", tmpMp3],
+    { stdio: "pipe" },
+  );
+  if (result.status !== 0) {
+    console.error(result.stderr?.toString() ?? "ffmpeg failed");
+    try {
+      fs.unlinkSync(tmpMp3);
+    } catch {}
+    process.exit(1);
+  }
+  fs.renameSync(tmpMp3, mp3Path);
+}
+
+function render(name: string, samples: Float32Array): void {
+  const wavPath = path.join(os.tmpdir(), `sudoku-sfx-${name}.wav`);
+  const mp3Path = path.join(SFX_DIR, `${name}.mp3`);
+  writeWav(samples, wavPath);
+  encodeMp3(wavPath, mp3Path);
+  fs.unlinkSync(wavPath);
+  const sizeKb = (fs.statSync(mp3Path).size / 1024).toFixed(1);
+  console.log(`generated ${path.relative(process.cwd(), mp3Path)} (${sizeKb} KB)`);
+}
+
 function checkFfmpeg(): void {
   const result = spawnSync("ffmpeg", ["-version"], { stdio: "pipe" });
   if (result.error || result.status !== 0) {
@@ -102,16 +161,8 @@ function main(): void {
   checkFfmpeg();
   fs.mkdirSync(SFX_DIR, { recursive: true });
 
-  // Self-check: build a 1-second 440Hz sine, normalize, verify length and peak.
-  const probe = normalize(sine(440, 1.0));
-  let maxAbs = 0;
-  for (let i = 0; i < probe.length; i++) {
-    const a = Math.abs(probe[i]);
-    if (a > maxAbs) maxAbs = a;
-  }
-  console.log(
-    `primitives ok: probe length=${probe.length} (expected ${SAMPLE_RATE}), peak=${maxAbs.toFixed(4)} (expected ~0.95)`,
-  );
+  // Probe: render a 1-second 440Hz sine to verify the full pipeline.
+  render("_probe", normalize(sine(440, 1.0)));
 }
 
 main();
