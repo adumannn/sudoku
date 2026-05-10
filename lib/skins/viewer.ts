@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createServerClient } from "@/lib/supabase/server";
 import type { SkinRecord } from "./types";
 
@@ -17,7 +18,10 @@ const EMPTY_VIEWER: Viewer = {
   allSkins: [],
 };
 
-export async function getViewer(): Promise<Viewer> {
+// React cache() dedupes within a single request: layout, /skins page, and
+// <SkinChip /> all call getViewer(); without this, each call re-queries
+// Supabase. With cache, the first call's promise is reused.
+export const getViewer = cache(async (): Promise<Viewer> => {
   const sb = createServerClient();
 
   const logQueryError = (where: string, error: unknown) => {
@@ -60,4 +64,4 @@ export async function getViewer(): Promise<Viewer> {
     ownedSkinIds: new Set((ents ?? []).map((e: { skin_id: string }) => e.skin_id)),
     allSkins,
   };
-}
+});

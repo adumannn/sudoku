@@ -26,6 +26,7 @@ export async function setActiveSkin(skinId: string | null): Promise<SetActiveSki
       return { ok: false, error: "write failed" };
     }
     revalidatePath("/", "layout");
+    revalidatePath("/skins");
     return { ok: true };
   }
 
