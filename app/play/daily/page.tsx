@@ -27,9 +27,8 @@ export default async function Daily() {
   ]);
   const skin = await resolveActiveSkinServer({ surface: "daily", dailyDate: date, viewer });
 
-  const dailyKanji = cal
-    ? { kanji: cal.kanji as string, romaji: cal.romaji as string, meaning: cal.meaning as string }
-    : null;
+  type DailyKanjiRow = { kanji: string; romaji: string; meaning: string };
+  const dailyKanji = (cal as DailyKanjiRow | null) ?? null;
 
   return (
     <div data-skin={skin.paletteKey}>
