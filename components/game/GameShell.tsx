@@ -11,12 +11,14 @@ import { CoachPopover, SenseiBody } from "./CoachPopover";
 import { Masthead } from "@/components/Masthead";
 import { saveGame } from "@/app/actions/save-game";
 import { useSkin } from "@/components/theme/SkinContext";
+import { preloadSfx, setSfxEnabled } from "@/lib/sfx";
 
 interface Props {
   difficulty: Difficulty;
   puzzle: { id?: string; givens: string; solution: string };
   dailyDate?: string;
   dailyNumber?: number;
+  sfxEnabled?: boolean;
 }
 
 const DIFF_LABEL: Record<Difficulty, string> = {
@@ -26,7 +28,13 @@ const DIFF_LABEL: Record<Difficulty, string> = {
   expert: "極 Expert",
 };
 
-export function GameShell({ difficulty, puzzle, dailyDate, dailyNumber }: Props) {
+export function GameShell({
+  difficulty,
+  puzzle,
+  dailyDate,
+  dailyNumber,
+  sfxEnabled = false,
+}: Props) {
   const skin = useSkin();
   const load = useGame((s) => s.load);
   const setCell = useGame((s) => s.setCell);
@@ -49,6 +57,11 @@ export function GameShell({ difficulty, puzzle, dailyDate, dailyNumber }: Props)
       dailyNumber,
     });
   }, [load, difficulty, puzzle.givens, puzzle.solution, puzzle.id, dailyDate, dailyNumber]);
+
+  useEffect(() => {
+    setSfxEnabled(sfxEnabled);
+    preloadSfx();
+  }, [sfxEnabled]);
 
   const board = useGame((s) => s.board);
   const notes = useGame((s) => s.notes);
@@ -173,6 +186,7 @@ export function GameShell({ difficulty, puzzle, dailyDate, dailyNumber }: Props)
     (puzzle.id ?? "0000").slice(0, 4) + " · seed";
 
   const [senseiOpen, setSenseiOpen] = useState(false);
+  const [showSolveWash, setShowSolveWash] = useState(false);
 
   useEffect(() => {
     if (!senseiOpen) return;
@@ -187,6 +201,16 @@ export function GameShell({ difficulty, puzzle, dailyDate, dailyNumber }: Props)
     if (running) pause();
     else resumeTimer();
   };
+
+  useEffect(() => {
+    if (!isComplete) {
+      setShowSolveWash(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowSolveWash(true), 100);
+    return () => window.clearTimeout(timer);
+  }, [isComplete]);
 
   return (
     <>
@@ -238,7 +262,10 @@ export function GameShell({ difficulty, puzzle, dailyDate, dailyNumber }: Props)
 
           {/* CENTER: board */}
           <div className="max-w-[min(100vw-32px,640px)] lg:max-w-[640px] w-full mx-auto">
-            <Board />
+            <div className="relative">
+              <Board />
+              {showSolveWash && <div className="solve-ink-wash" aria-hidden />}
+            </div>
 
             {/* Keyboard shortcuts under board (desktop only — mobile has the bottom rail) */}
             <div className="hidden lg:flex mt-4 flex-wrap justify-between gap-x-4 gap-y-2 mono text-[10px] tracking-[0.18em] uppercase text-moss">

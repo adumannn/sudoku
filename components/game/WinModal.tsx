@@ -1,16 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGame } from "@/lib/store/game-store";
-import { formatTime } from "@/lib/utils";
+import { formatTime, cn } from "@/lib/utils";
 import { ScrollContextStrip } from "@/components/year-scroll/ScrollContextStrip";
 import { useSkin } from "@/components/theme/SkinContext";
+import { playSfx } from "@/lib/sfx";
+import { SealStamp } from "@/lib/vfx/SealStamp";
 import type { SealEntry, YearSeries } from "@/lib/seal/types";
 
 export function WinModal() {
@@ -25,6 +26,7 @@ export function WinModal() {
   const skin = useSkin();
 
   const [open, setOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -32,9 +34,23 @@ export function WinModal() {
   const [series, setSeries] = useState<YearSeries | null>(null);
 
   useEffect(() => {
-    if (!isComplete) return;
-    const t = setTimeout(() => setOpen(true), 700);
-    return () => clearTimeout(t);
+    if (!isComplete) {
+      setOpen(false);
+      setShowDetails(false);
+      return;
+    }
+
+    const openTimer = window.setTimeout(() => setOpen(true), 400);
+    const thunkTimer = window.setTimeout(() => playSfx("solve-thunk"), 400);
+    const toneTimer = window.setTimeout(() => playSfx("solve-tone"), 600);
+    const detailsTimer = window.setTimeout(() => setShowDetails(true), 1200);
+
+    return () => {
+      window.clearTimeout(openTimer);
+      window.clearTimeout(thunkTimer);
+      window.clearTimeout(toneTimer);
+      window.clearTimeout(detailsTimer);
+    };
   }, [isComplete]);
 
   const fetchYear = async () => {
@@ -124,25 +140,19 @@ export function WinModal() {
       <DialogContent className="overflow-hidden p-0 max-w-[480px] bg-bone border-2 border-sumi rounded-none">
         <div className="px-8 py-10 text-center relative">
           <div className="relative w-[88px] h-[88px] mx-auto">
-            <SealWash />
-            <SealBurst />
-            <motion.div
-              initial={{ scale: 0.6, rotate: 0, opacity: 0, filter: "blur(4px)" }}
-              animate={{ scale: 1, rotate: 0, opacity: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.7, delay: 0.35, ease: "easeOut" }}
-              className="w-[88px] h-[88px] text-[48px] absolute inset-0 flex items-center justify-center mincho text-sumi leading-none"
-            >
-              {todayKanji}
-            </motion.div>
-            <motion.span
-              initial={{ opacity: 0, rotate: -20, scale: 1.6 }}
-              animate={{ opacity: 1, rotate: -6, scale: 1 }}
-              transition={{ duration: 0.6, delay: 1.1, ease: "easeOut" }}
-              className="absolute bottom-1 right-1 w-[22px] h-[22px] bg-vermillion text-bone rounded-full flex items-center justify-center text-[12px] font-semibold pointer-events-none"
+            <SealStamp
+              kanji={todayKanji}
+              className="w-[88px] h-[88px] text-[48px] absolute inset-0"
+            />
+            <span
+              className={cn(
+                "solve-check absolute bottom-1 right-1 w-[22px] h-[22px] bg-vermillion text-bone rounded-full flex items-center justify-center text-[12px] font-semibold pointer-events-none",
+                showDetails && "solve-check-visible",
+              )}
               aria-hidden
             >
               ✓
-            </motion.span>
+            </span>
           </div>
           <DialogTitle asChild>
             <h2 className="h-disp text-[56px] mt-6 leading-[0.96]">
@@ -155,60 +165,62 @@ export function WinModal() {
               : `${difficulty ?? "casual"} box closed.`}
           </p>
 
-          <div className="grid grid-cols-3 gap-2 py-6 mt-4 border-t border-b border-sumi">
-            <Stat label="time" value={formatTime(elapsed)} />
-            <Stat label="errors" value={errorsMade} />
-            <Stat label="hints" value={hintsUsed} />
-          </div>
-
-          {contextWindow && dailyDate && (
-            <div className="mt-4 -mx-8">
-              <ScrollContextStrip
-                window={contextWindow}
-                filledCount={filledCount}
-                totalDays={totalDays}
-              />
+          <div className={cn("solve-details", showDetails && "solve-details-visible")}>
+            <div className="grid grid-cols-3 gap-2 py-6 mt-4 border-t border-b border-sumi">
+              <Stat label="time" value={formatTime(elapsed)} />
+              <Stat label="errors" value={errorsMade} />
+              <Stat label="hints" value={hintsUsed} />
             </div>
-          )}
 
-          {dailyDate && (
-            <div className="space-y-3 mt-4 text-left">
-              <label className="flex items-center gap-2 text-[13px] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => onConsentChange(e.target.checked)}
-                  className="h-4 w-4 accent-vermillion"
+            {contextWindow && dailyDate && (
+              <div className="mt-4 -mx-8">
+                <ScrollContextStrip
+                  window={contextWindow}
+                  filledCount={filledCount}
+                  totalDays={totalDays}
                 />
-                <span>Share my city on the ledger</span>
-              </label>
-              {submitting && !submitted && (
-                <div className="text-moss text-[12px] mono uppercase tracking-wider">
-                  recording…
-                </div>
-              )}
-              {submitted && (
-                <div className="text-[13px] text-moss ital">
-                  recorded ·{" "}
-                  <Link href="/leaderboard" className="underline text-vermillion not-italic">
-                    view ledger
-                  </Link>
-                </div>
-              )}
-              {error && (
-                <div className="text-hazard text-[13px] mono uppercase tracking-wider">
-                  {error}
-                  <button
-                    onClick={() => submitImpl(consent)}
-                    className="ml-2 underline"
-                    disabled={submitting}
-                  >
-                    retry
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {dailyDate && (
+              <div className="space-y-3 mt-4 text-left">
+                <label className="flex items-center gap-2 text-[13px] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => onConsentChange(e.target.checked)}
+                    className="h-4 w-4 accent-vermillion"
+                  />
+                  <span>Share my city on the ledger</span>
+                </label>
+                {submitting && !submitted && (
+                  <div className="text-moss text-[12px] mono uppercase tracking-wider">
+                    recording…
+                  </div>
+                )}
+                {submitted && (
+                  <div className="text-[13px] text-moss ital">
+                    recorded ·{" "}
+                    <Link href="/leaderboard" className="underline text-vermillion not-italic">
+                      view ledger
+                    </Link>
+                  </div>
+                )}
+                {error && (
+                  <div className="text-hazard text-[13px] mono uppercase tracking-wider">
+                    {error}
+                    <button
+                      onClick={() => submitImpl(consent)}
+                      className="ml-2 underline"
+                      disabled={submitting}
+                    >
+                      retry
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-2 mt-6">
             {dailyDate ? (
@@ -256,46 +268,5 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
         {value}
       </div>
     </div>
-  );
-}
-
-/** Subtle vermillion ink burst centered on the seal */
-function SealBurst() {
-  const rays = Array.from({ length: 12 }, (_, i) => i);
-  return (
-    <div className="pointer-events-none absolute inset-0">
-      {rays.map((i) => {
-        const angle = (i / rays.length) * Math.PI * 2;
-        const distance = 60 + Math.random() * 30;
-        const dx = Math.cos(angle) * distance;
-        const dy = Math.sin(angle) * distance;
-        return (
-          <motion.span
-            key={i}
-            className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 bg-vermillion rounded-full"
-            initial={{ x: 0, y: 0, opacity: 0.7, scale: 1 }}
-            animate={{ x: dx, y: dy, opacity: 0, scale: 0.3 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-/** Vermillion radial wash behind the seal */
-function SealWash() {
-  return (
-    <motion.div
-      aria-hidden
-      initial={{ opacity: 0, scale: 0.6 }}
-      animate={{ opacity: 1, scale: 1.6 }}
-      transition={{ duration: 0.2, delay: 0.1 }}
-      className="pointer-events-none absolute inset-0"
-      style={{
-        background:
-          "radial-gradient(closest-side, hsla(9 66% 46% / 0.18), transparent)",
-      }}
-    />
   );
 }
