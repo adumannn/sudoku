@@ -62,14 +62,14 @@ export function SfxToggle({ initialEnabled }: SfxToggleProps) {
           disabled={pending}
           onClick={() => update(!enabled)}
           className={cn(
-            "relative h-8 w-14 shrink-0 border-[1.5px] border-sumi transition-colors disabled:opacity-60",
-            enabled ? "bg-vermillion" : "bg-rice",
+            "inline-flex h-8 w-14 shrink-0 items-center border-[1.5px] border-sumi p-1 transition-colors disabled:opacity-60",
+            enabled ? "justify-end bg-vermillion" : "justify-start bg-rice",
           )}
         >
           <span
             className={cn(
-              "absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 bg-sumi transition-transform",
-              enabled ? "translate-x-7 bg-bone" : "translate-x-0",
+              "block h-5 w-5 bg-sumi transition-colors",
+              enabled && "bg-bone",
             )}
           />
         </button>
