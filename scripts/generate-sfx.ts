@@ -183,6 +183,24 @@ function makeSolveThunk(): Float32Array {
   );
 }
 
+function makeSolveTone(): Float32Array {
+  const dur = 1.4;
+  // cents-to-frequency-ratio helper — small detune for shimmer.
+  const cents = (c: number) => Math.pow(2, c / 1200);
+  return normalize(
+    mix([
+      // Hum partial: longest decay (the slow ring).
+      { samples: expDecay(sine(220 * cents(0), dur), 0.5), gain: 1.0 },
+      // Strike partial.
+      { samples: expDecay(sine(440 * cents(-2), dur), 0.3), gain: 0.7 },
+      // Tierce: minor third above 440 (just intonation, characteristic of bonshō).
+      { samples: expDecay(sine(528 * cents(2), dur), 0.25), gain: 0.5 },
+      // Quint partial: shortest decay, darkens out first.
+      { samples: expDecay(sine(660 * cents(-1), dur), 0.15), gain: 0.35 },
+    ]),
+  );
+}
+
 function checkFfmpeg(): void {
   const result = spawnSync("ffmpeg", ["-version"], { stdio: "pipe" });
   if (result.error || result.status !== 0) {
@@ -196,6 +214,7 @@ function main(): void {
   fs.mkdirSync(SFX_DIR, { recursive: true });
   render("place", makePlace());
   render("solve-thunk", makeSolveThunk());
+  render("solve-tone", makeSolveTone());
 }
 
 main();
