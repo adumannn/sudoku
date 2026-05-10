@@ -163,6 +163,26 @@ function makePlace(): Float32Array {
   );
 }
 
+function makeSolveThunk(): Float32Array {
+  const dur = 0.25;
+  // Bandpassed noise at 1.6kHz with a 25ms decay = the mallet contact transient.
+  const strike = expDecay(bandpass(noise(dur), 1600, 2), 0.025);
+  // Inharmonic partials (not integer multiples) give the metallic body.
+  // ±1Hz randomized detune keeps successive plays from sounding identical.
+  const detune = () => (Math.random() < 0.5 ? -1 : 1);
+  const body = mix([
+    { samples: expDecay(sine(320 + detune(), dur), 0.06), gain: 1 },
+    { samples: expDecay(sine(540 + detune(), dur), 0.06), gain: 1 },
+    { samples: expDecay(sine(720 + detune(), dur), 0.06), gain: 1 },
+  ]);
+  return normalize(
+    mix([
+      { samples: strike, gain: 0.5 },
+      { samples: body, gain: 0.5 },
+    ]),
+  );
+}
+
 function checkFfmpeg(): void {
   const result = spawnSync("ffmpeg", ["-version"], { stdio: "pipe" });
   if (result.error || result.status !== 0) {
@@ -175,6 +195,7 @@ function main(): void {
   checkFfmpeg();
   fs.mkdirSync(SFX_DIR, { recursive: true });
   render("place", makePlace());
+  render("solve-thunk", makeSolveThunk());
 }
 
 main();
