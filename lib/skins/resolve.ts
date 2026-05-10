@@ -2,6 +2,7 @@ import type { SkinRecord, SkinResolved, Surface } from "./types";
 
 interface ResolveArgs {
   surface: Surface;
+  userId: string | null;          // null when the viewer is anonymous
   activeSkinId: string | null;
   isPro: boolean;
   ownedSkinIds: Set<string>;
@@ -69,7 +70,8 @@ export function resolveActiveSkin(args: ResolveArgs): SkinResolved {
   // the UI renders deterministically instead of crashing on an undefined.
   if (args.skins.length === 0) return HARDCODED_DEFAULT;
 
-  // 1. Daily surface is locked to the puzzle's published skin.
+  // 1. Daily surface is locked to the puzzle's published skin (independent
+  // of who is viewing — every solver should see the same daily flavor).
   if (args.surface === "daily") {
     const daily = findById(args.skins, args.dailySkinId);
     if (daily) return toResolved(daily);
@@ -77,17 +79,26 @@ export function resolveActiveSkin(args: ResolveArgs): SkinResolved {
     return toResolved(fallback);
   }
 
-  // 2. Home or casual: try the user's override if entitled.
+  // 2. Anonymous viewers get the marketing/default palette on every non-daily
+  // surface. Skin theming (overrides, seasons) is a signed-in feature, so the
+  // landing/casual chrome stays frozen as a guest experience and never
+  // carries over from a prior signed-in session.
+  if (args.userId === null) {
+    const fallback = findDefault(args.skins) ?? args.skins[0];
+    return toResolved(fallback);
+  }
+
+  // 3. Home or casual: try the user's override if entitled.
   const override = findById(args.skins, args.activeSkinId);
   if (override && canApplyOverride({ isPro: args.isPro, skin: override, ownedSkinIds: args.ownedSkinIds })) {
     return toResolved(override);
   }
 
-  // 3. Otherwise, current-date season skin.
+  // 4. Otherwise, current-date season skin.
   const season = findCurrentSeason(args.skins, args.today);
   if (season) return toResolved(season);
 
-  // 4. Final fallback.
+  // 5. Final fallback.
   const fallback = findDefault(args.skins) ?? args.skins[0];
   return toResolved(fallback);
 }
