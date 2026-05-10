@@ -151,7 +151,7 @@ export function AnimatedHeroBoard({ seqLabel }: AnimatedHeroBoardProps): JSX.Ele
 
       cells.push(
         <div key={`${r}-${c}`} className={className} style={{ cursor: "default" }}>
-          {display}
+          <span className="cell-value">{display}</span>
         </div>,
       );
     }
