@@ -1,0 +1,57 @@
+import Stripe from "stripe";
+import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
+import { getPriceIdForSkinSlug, isPurchasableSlug } from "@/lib/stripe/skin-prices";
+
+export async function POST(req: Request) {
+  const sb = createServerClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) {
+    return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_SITE_URL!));
+  }
+
+  // Form-encoded body: { slug: "sumi-e" }
+  // We accept slug rather than skin_id so the form action is stable across DB resets.
+  const form = await req.formData();
+  const slug = String(form.get("slug") ?? "");
+
+  if (!isPurchasableSlug(slug)) {
+    return NextResponse.json({ error: "skin not purchasable" }, { status: 400 });
+  }
+
+  const priceId = getPriceIdForSkinSlug(slug);
+  if (!priceId) {
+    // Slug is in the allow-list but the env var is unset — config error, not user error.
+    console.error(`[stripe/checkout/skin] missing price id for slug=${slug}`);
+    return NextResponse.json({ error: "checkout temporarily unavailable" }, { status: 503 });
+  }
+
+  // Look up skin_id for the metadata so the (future) webhook can insert
+  // user_skin_entitlements directly without a slug→id round-trip.
+  const { data: skin } = await sb
+    .from("skins")
+    .select("id")
+    .eq("slug", slug)
+    .eq("active", true)
+    .maybeSingle();
+  if (!skin) {
+    return NextResponse.json({ error: "skin not found" }, { status: 404 });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/skins?purchased=${encodeURIComponent(slug)}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/skins?canceled=1`,
+    customer_email: user.email,
+    metadata: { user_id: user.id, skin_id: skin.id, skin_slug: slug },
+  });
+  // TODO(stripe): implement webhook to insert user_skin_entitlements row on
+  // `checkout.session.completed`. For prototype, manually run in Supabase SQL editor:
+  //   insert into user_skin_entitlements (user_id, skin_id, source)
+  //   values ('<user-uuid>', '<skin-uuid>', 'purchase');
+  return NextResponse.redirect(session.url!, { status: 303 });
+}
