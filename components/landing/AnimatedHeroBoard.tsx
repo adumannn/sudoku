@@ -1,5 +1,7 @@
 "use client";
 
+import { VermillionStamp } from "./VermillionStamp";
+
 // 9×9 grid of given digits (sumi/black, immutable). 32 non-null entries.
 export const GIVENS: ReadonlyArray<ReadonlyArray<number | null>> = [
   [1, null, 3, null, null, null, 7, null, 9],
@@ -87,6 +89,124 @@ export interface AnimatedHeroBoardProps {
   seqLabel: string;
 }
 
-export function AnimatedHeroBoard(_props: AnimatedHeroBoardProps): JSX.Element | null {
-  return null;
+type CellRole =
+  | { kind: "given"; value: number }
+  | { kind: "placed-static"; value: number }
+  | { kind: "queue"; value: number; queueIndex: number };
+
+function buildRoleGrid(): CellRole[][] {
+  const grid: (CellRole | null)[][] = Array.from({ length: 9 }, () => Array(9).fill(null));
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const v = GIVENS[r][c];
+      if (v !== null) grid[r][c] = { kind: "given", value: v };
+    }
+  }
+  for (const cell of START_PLACED) {
+    grid[cell.r][cell.c] = { kind: "placed-static", value: cell.value };
+  }
+  FILL_QUEUE.forEach((cell, queueIndex) => {
+    grid[cell.r][cell.c] = { kind: "queue", value: cell.value, queueIndex };
+  });
+  return grid as CellRole[][];
+}
+
+const ROLE_GRID = buildRoleGrid();
+const GIVENS_COUNT = 32;
+const START_PLACED_COUNT = 13;
+
+export function AnimatedHeroBoard({ seqLabel }: AnimatedHeroBoardProps): JSX.Element {
+  // Placeholder static state — animation is wired in Task 5.
+  const placedCount = FILL_QUEUE.length;
+  const sealVisible = true;
+
+  const placed = GIVENS_COUNT + START_PLACED_COUNT + placedCount;
+  const toGo = FILL_QUEUE.length - placedCount;
+
+  const cells: JSX.Element[] = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const role = ROLE_GRID[r][c];
+      let className = "hako-cell";
+      let display: string | number = "·";
+
+      if (role.kind === "given") {
+        className += " given";
+        display = role.value;
+      } else if (role.kind === "placed-static") {
+        className += " player";
+        display = role.value;
+      } else {
+        // role.kind === "queue"
+        if (role.queueIndex < placedCount) {
+          className += " player";
+          display = role.value;
+          if (role.queueIndex === placedCount - 1) {
+            className += " ink-place";
+          }
+        } else {
+          className += " text-transparent";
+        }
+      }
+
+      cells.push(
+        <div key={`${r}-${c}`} className={className} style={{ cursor: "default" }}>
+          {display}
+        </div>,
+      );
+    }
+  }
+
+  return (
+    <div
+      className="relative px-8 pt-14 pb-12 lg:p-16 bg-rice flex flex-col justify-center overflow-hidden"
+      aria-hidden="true"
+    >
+      <div className="absolute top-6 left-6 right-6 flex justify-between items-center">
+        <span className="mono text-[9.5px] tracking-[0.22em] uppercase text-moss">
+          — preview · today&rsquo;s grid, mid-solve
+        </span>
+        <span className="mono text-[9.5px] tracking-[0.22em] uppercase text-moss">
+          № {seqLabel}
+        </span>
+      </div>
+
+      <div className="absolute top-[18px] right-[18px]">
+        <VermillionStamp glyph="日" size={64} fontSize={34} rotate={8} />
+      </div>
+
+      <div className="mt-9 mx-auto w-full max-w-[440px] relative">
+        <div className="hako-board">{cells}</div>
+
+        {sealVisible && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <VermillionStamp
+              glyph="完"
+              size={140}
+              fontSize={76}
+              rotate={8}
+              className="hako-hero-seal"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 text-center max-w-[440px] self-center ital text-[15px] text-moss leading-snug">
+        — sumi numerals are <em className="text-vermillion-deep">given</em>;
+        vermillion are <em className="text-vermillion-deep">yours</em>. The grid
+        is the brand.
+      </div>
+
+      <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end mono text-[9.5px] tracking-[0.18em] uppercase text-moss">
+        <div>
+          seed <strong className="text-sumi font-medium">7b3c</strong> ·{" "}
+          <strong className="text-sumi font-medium">{placed}</strong> placed
+        </div>
+        <div>
+          conflicts <strong className="text-sumi font-medium">0</strong> ·{" "}
+          <strong className="text-sumi font-medium">{toGo}</strong> to go
+        </div>
+      </div>
+    </div>
+  );
 }
