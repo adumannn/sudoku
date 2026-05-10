@@ -8,12 +8,11 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage() {
   const sb = createServerClient();
   const {
-    data: { session },
-  } = await sb.auth.getSession();
+    data: { user },
+  } = await sb.auth.getUser();
 
-  if (!session) redirect("/auth/login");
+  if (!user) redirect("/auth/login");
 
-  const user = session.user;
   const initial = user.email?.[0] ?? "·";
   const { data: profile } = await sb
     .from("profiles")

@@ -30,7 +30,7 @@ export function SealStamp({
         className,
       )}
     >
-      <span aria-hidden>{kanji}</span>
+      <span>{kanji}</span>
     </div>
   );
 }

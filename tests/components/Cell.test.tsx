@@ -33,6 +33,10 @@ describe("Cell placement ink", () => {
     rerender(<Cell {...baseProps} value={5} />);
 
     const cell = screen.getByRole("button", { name: "cell-0 5" });
+    // jsdom: React's vendor-prefix detection routes onAnimationEnd off
+    // `webkitAnimationEnd`. The standard `animationend` event isn't heard
+    // (and `AnimationEvent` is undefined in jsdom), so this prefix is
+    // necessary to drive the handler in tests.
     fireEvent(cell, new Event("webkitAnimationEnd", { bubbles: true }));
 
     expect(cell).not.toHaveClass("ink-place");
