@@ -92,9 +92,10 @@ export default async function Pro() {
           <li className="pro-bn last">
             <div className="pro-bk">完</div>
             <div>
-              <div className="pro-bt">No ads, ever.</div>
+              <div className="pro-bt">The full skin library.</div>
               <div className="pro-bd">
-                No interstitials between puzzles. The seal stays clean.
+                Every season skin, every premium edition. Yours while you&rsquo;re a member;
+                one-off purchases stay yours forever.
               </div>
             </div>
           </li>
