@@ -1,6 +1,7 @@
 // app/page.tsx
 import Link from "next/link";
 import { Masthead } from "@/components/Masthead";
+import { SkinChip } from "@/components/skins/SkinChip";
 import { TodayCard } from "@/components/year-scroll/TodayCard";
 import { YearScroll } from "@/components/year-scroll/YearScroll";
 import { CityPicker } from "@/components/profile/CityPicker";
@@ -62,7 +63,7 @@ export default async function Home() {
     .eq("date", today)
     .maybeSingle();
   const todaySealKanji =
-    (todayPuzzle?.skins as { seal_kanji: string } | null)?.seal_kanji ?? "完";
+    (todayPuzzle?.skins as unknown as { seal_kanji: string } | null)?.seal_kanji ?? "完";
   const todaySeal = todayCal
     ? {
         date: todayCal.date,
@@ -123,7 +124,7 @@ export default async function Home() {
       : yearStart;
     series = assembleYearSeries({
       today,
-      calendar: (cal ?? []) as any[],
+      calendar: (cal ?? []) as unknown as Parameters<typeof assembleYearSeries>[0]["calendar"],
       completedByDate,
       frozenDates: frozen,
       signupDate,
@@ -246,7 +247,12 @@ export default async function Home() {
 
   return (
     <>
-      <Masthead active="today" initial={initial} email={user.email ?? null} />
+      <Masthead
+        active="today"
+        initial={initial}
+        email={user.email ?? null}
+        rightChip={<SkinChip />}
+      />
 
       <main className="px-6 lg:px-24 py-10 lg:py-16 max-w-[1480px] mx-auto">
         <div className="eyebrow red">{dateLine()}</div>
@@ -271,7 +277,6 @@ export default async function Home() {
           <TodayCard
             today={todaySeal}
             completedElapsed={completedTodayElapsed}
-            streakDays={streak}
             freezePrompt={freezePrompt}
             tategakiDay={weekdayJp()}
           />

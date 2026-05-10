@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Masthead } from "@/components/Masthead";
+import { SkinChip } from "@/components/skins/SkinChip";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,12 @@ export default async function CasualLanding() {
 
   return (
     <>
-      <Masthead active="play" initial={initial} email={user?.email ?? null} />
+      <Masthead
+        active="play"
+        initial={initial}
+        email={user?.email ?? null}
+        rightChip={user ? <SkinChip /> : null}
+      />
 
       <main className="px-8 py-14 lg:px-16 lg:py-20 max-w-[1200px] mx-auto">
         <div className="mono text-[11px] tracking-[0.22em] uppercase text-moss">

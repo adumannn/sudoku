@@ -8,7 +8,9 @@ import {
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { resolveActiveSkinServer } from "@/lib/skins/server";
+import { getViewer } from "@/lib/skins/viewer";
 import { SkinProvider } from "@/components/theme/SkinContext";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const mincho = Shippori_Mincho({
   weight: ["400", "500", "600", "700", "800"],
@@ -55,7 +57,9 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Resolve the home/chrome skin once at the layout level.
   // /play/daily and /play/[difficulty] re-wrap with their own SkinProvider downstream.
-  const skin = await resolveActiveSkinServer({ surface: "home" });
+  // Fetch the viewer once and pass it through so the resolver doesn't re-query.
+  const viewer = await getViewer();
+  const skin = await resolveActiveSkinServer({ surface: "home", viewer });
 
   return (
     <html
@@ -67,6 +71,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
           <Toaster />
         </SkinProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

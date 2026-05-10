@@ -32,7 +32,7 @@ export function NumberPad({ onPause, paused, variant = "default" }: NumberPadPro
       if (v) c[v] = Math.max(0, c[v] - 1);
     }
     return c;
-  }, [board, givens]);
+  }, [board]);
 
   const press = (v: number) => {
     if (selected == null) return;

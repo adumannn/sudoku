@@ -108,7 +108,8 @@ export function GameShell({
       if (e.key >= "1" && e.key <= "9") {
         if (s.selected == null) return;
         const v = +e.key;
-        s.noteMode ? toggleNote(s.selected, v) : setCell(s.selected, v);
+        if (s.noteMode) toggleNote(s.selected, v);
+        else setCell(s.selected, v);
         return;
       }
       if (e.key === "Backspace" || e.key === "Delete") {

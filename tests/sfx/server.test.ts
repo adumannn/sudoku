@@ -26,7 +26,7 @@ function mockServerClient({
   createServerClientMock.mockReturnValue({
     auth: { getUser },
     from,
-  } as ReturnType<typeof createServerClient>);
+  } as unknown as ReturnType<typeof createServerClient>);
 
   return { eq, from, getUser, maybeSingle, select };
 }
