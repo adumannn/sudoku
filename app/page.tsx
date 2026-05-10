@@ -1,17 +1,12 @@
 // app/page.tsx
+import { Suspense } from "react";
 import Link from "next/link";
 import { Masthead } from "@/components/Masthead";
 import { SkinChip } from "@/components/skins/SkinChip";
-import { TodayCard } from "@/components/year-scroll/TodayCard";
-import { YearScroll } from "@/components/year-scroll/YearScroll";
 import { CityPicker } from "@/components/profile/CityPicker";
 import { Landing } from "@/components/landing/Landing";
 import { createServerClient } from "@/lib/supabase/server";
 import { todayUTC, formatTime } from "@/lib/utils";
-import { computeUnifiedStreak } from "@/lib/seal/streak";
-import { computeAllotment } from "@/lib/seal/freeze";
-import { assembleYearSeries } from "@/lib/seal/year";
-import { fillCalendarYear, type CalendarEntry } from "@/lib/seal/calendar";
 import { dateLine, weekdayJp } from "@/lib/kanji";
 import { computeDailySnapshot, computeCityCounts } from "@/lib/stats/leaderboard";
 import { getCity } from "@/lib/geo";
@@ -22,9 +17,11 @@ import {
   getDailySeq,
   getPublicDailySnapshot,
 } from "@/lib/home-data";
-import type { YearSeries } from "@/lib/seal/types";
 import { computeTodayRank } from "@/lib/stats/rank";
-import { YouTodayPanel } from "@/components/stats/YouTodayPanel";
+import { HomeHeroSection } from "./HomeHeroSection";
+import { HomeYearSection } from "./HomeYearSection";
+import { HomeHeroSkeleton } from "@/components/skeletons/HomeHeroSkeleton";
+import { HomeYearSkeleton } from "@/components/skeletons/HomeYearSkeleton";
 
 export const dynamic = "force-dynamic";
 
@@ -55,9 +52,7 @@ export default async function Home() {
     getPublicDailySnapshot(today),
     getDailySeq(today),
   ]);
-  const skin = await resolveActiveSkinServer({ surface: "home", viewer });
   const user = viewer.userId ? { id: viewer.userId, email: viewer.email } : null;
-  const initial = user?.email?.[0] ?? "·";
 
   const todaySeal = sealBundle.cal
     ? {
@@ -101,86 +96,23 @@ export default async function Home() {
     );
   }
 
+  // signed-in path
+  const initial = user.email?.[0] ?? "·";
+
+  // Resolve skin and prefetch profiles.city in parallel — both are only
+  // needed on the signed-in branch, so we keep them off the signed-out
+  // path's critical render.
   const sb = createServerClient();
-  const yearStart = `${year}-01-01`;
-  const yearEnd = `${year}-12-31`;
-
-  const preview = snapshotRaw.rows.slice(0, 3).map((r, i) => ({
-    rank: (i + 1).toString().padStart(2, "0"),
-    name: r.username,
-    time: formatTime(r.elapsed_seconds),
-    first: i === 0,
-  }));
-
-  // Year series + streak (signed-in only — guarded by the early return above).
-  let freezePrompt: { date: string; kanji: string; remaining: number } | null = null;
-  const [
-    { data: cal },
-    { data: results },
-    { data: freezes },
-    { data: profile },
-    { data: dailyMeta },
-  ] = await Promise.all([
+  const [skin, profileForCity] = await Promise.all([
+    resolveActiveSkinServer({ surface: "home", viewer }),
     sb
-      .from("daily_seal_calendar")
-      .select("date,kanji,romaji,meaning")
-      .gte("date", yearStart).lte("date", yearEnd)
-      .order("date", { ascending: true }),
-    sb.from("daily_results").select("date,elapsed_seconds")
-      .eq("user_id", user.id)
-      .gte("date", yearStart).lte("date", yearEnd),
-    sb.from("streak_freezes").select("date")
-      .eq("user_id", user.id)
-      .gte("date", yearStart).lte("date", yearEnd),
-    sb.from("profiles").select("created_at,is_pro,city").eq("id", user.id).maybeSingle(),
-    sb
-      .from("daily_puzzles")
-      .select("date, skin_id, skins(seal_kanji)")
-      .gte("date", yearStart).lte("date", yearEnd),
+      .from("profiles")
+      .select("city")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then((r) => r.data),
   ]);
-  const profileCity: string | null = profile?.city ?? null;
-  const completedByDate = new Map<string, number>();
-  for (const r of (results ?? []) as { date: string; elapsed_seconds: number }[]) {
-    completedByDate.set(r.date, r.elapsed_seconds);
-  }
-  const frozen = new Set<string>(((freezes ?? []) as { date: string }[]).map((f) => f.date));
-  type DailyMetaRow = { date: string; skin_id: string; skins: { seal_kanji: string } | null };
-  const sealKanjiByDate = new Map<string, string>();
-  for (const r of (dailyMeta ?? []) as unknown as DailyMetaRow[]) {
-    sealKanjiByDate.set(r.date, r.skins?.seal_kanji ?? "完");
-  }
-  const signupDate = profile?.created_at
-    ? new Date(profile.created_at).toISOString().slice(0, 10)
-    : yearStart;
-  const series: YearSeries = assembleYearSeries({
-    today,
-    calendar: fillCalendarYear(year, (cal ?? []) as CalendarEntry[]),
-    completedByDate,
-    frozenDates: frozen,
-    signupDate,
-    sealKanjiByDate,
-  });
-  const streak = computeUnifiedStreak(today, new Set(completedByDate.keys()), frozen);
-  const completedTodayElapsed = completedByDate.get(today);
-
-  if (profile?.is_pro) {
-    const yest = new Date(today + "T00:00:00Z");
-    yest.setUTCDate(yest.getUTCDate() - 1);
-    const yestStr = yest.toISOString().slice(0, 10);
-    const yestEntry = series.seals.find((s) => s.date === yestStr);
-    if (yestEntry?.state === "empty") {
-      const granted = `${yestStr.slice(0, 7)}-01`;
-      const { count } = await sb
-        .from("streak_freezes")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("granted_month", granted);
-      const used = count ?? 0;
-      const allotment = computeAllotment(profile.created_at, granted);
-      const remaining = Math.max(0, allotment - used);
-      if (remaining > 0) freezePrompt = { date: yestStr, kanji: yestEntry.kanji, remaining };
-    }
-  }
+  const profileCity: string | null = profileForCity?.city ?? null;
 
   // Popular city list for the home banner picker (signed-in only).
   let popularCities: { city: string; count: number }[] = [];
@@ -200,10 +132,13 @@ export default async function Home() {
     })),
     userId: user.id,
   });
-  const yearFilled = series.seals.filter(
-    (s) => s.state === "filled" || s.state === "freeze",
-  ).length;
-  const yearTotal = series.seals.length;
+
+  const preview = snapshotRaw.rows.slice(0, 3).map((r, i) => ({
+    rank: (i + 1).toString().padStart(2, "0"),
+    name: r.username,
+    time: formatTime(r.elapsed_seconds),
+    first: i === 0,
+  }));
 
   return (
     <>
@@ -233,23 +168,15 @@ export default async function Home() {
         )}
 
         {/* ── Band 1 · Hero ───────────────────────────────────────── */}
-        <section className="mt-6 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] lg:gap-12 items-start">
-          <TodayCard
-            today={todaySeal}
-            completedElapsed={completedTodayElapsed}
-            freezePrompt={freezePrompt}
-            tategakiDay={weekdayJp()}
+        <Suspense fallback={<HomeHeroSkeleton />}>
+          <HomeHeroSection
+            userId={user.id}
+            today={today}
+            year={year}
+            todaySeal={todaySeal}
+            todayRank={todayRank}
           />
-          <div className="mt-8 lg:mt-0">
-            <YouTodayPanel
-              streak={streak}
-              yearFilled={yearFilled}
-              yearTotal={yearTotal}
-              todayElapsed={completedTodayElapsed ?? null}
-              todayRank={todayRank}
-            />
-          </div>
-        </section>
+        </Suspense>
 
         {/* ── Band 1.5 · Casual ──────────────────────────────────── */}
         <section className="mt-12 max-w-[640px] border-t border-sumi/20 pt-6">
@@ -285,17 +212,9 @@ export default async function Home() {
         </section>
 
         {/* ── Band 2 · Year ───────────────────────────────────────── */}
-        <section className="mt-12">
-          <div className="flex justify-between items-baseline mb-3">
-            <div className="eyebrow">your year</div>
-            <div className="mono text-[11px] tracking-[0.14em] text-moss">
-              {yearFilled}
-              {" / "}
-              {yearTotal}
-            </div>
-          </div>
-          <YearScroll series={series} />
-        </section>
+        <Suspense fallback={<HomeYearSkeleton />}>
+          <HomeYearSection userId={user.id} today={today} year={year} />
+        </Suspense>
 
         {/* ── Band 3 · Bottom strip ───────────────────────────────── */}
         <section className="mt-12 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
