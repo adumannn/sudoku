@@ -14,13 +14,14 @@ const skin = (overrides: Partial<SkinRecord>): SkinRecord => ({
   masthead: "Today's test.",
   start_date: null,
   end_date: null,
-  price_cents: 300,
+  price_cents: 100,
   active: true,
   ...overrides,
 });
 
 const viewer = (overrides: Partial<Viewer>): Viewer => ({
   userId: "u1",
+  email: null,
   isPro: false,
   activeSkinId: null,
   ownedSkinIds: new Set(),
@@ -43,11 +44,11 @@ afterEach(() => {
 });
 
 describe("getCatalogAction — premium skins", () => {
-  const sumi = skin({ id: "sumi-id", slug: "sumi-e", kind: "premium", name: "Sumi-e", price_cents: 300 });
+  const sumi = skin({ id: "sumi-id", slug: "sumi-e", kind: "premium", name: "Sumi-e", price_cents: 100 });
 
   it("free user, not owned: shows buy button with price", () => {
     const action = getCatalogAction(sumi, viewer({ isPro: false }), TODAY);
-    expect(action).toEqual({ kind: "buy", priceCents: 300, slug: "sumi-e" });
+    expect(action).toEqual({ kind: "buy", priceCents: 100, slug: "sumi-e" });
   });
 
   it("free user, owned via past purchase: shows wear button", () => {
@@ -75,7 +76,7 @@ describe("getCatalogAction — premium skins", () => {
 
   it("free user with anonymous viewer: shows buy button", () => {
     const action = getCatalogAction(sumi, viewer({ userId: null, isPro: false }), TODAY);
-    expect(action).toEqual({ kind: "buy", priceCents: 300, slug: "sumi-e" });
+    expect(action).toEqual({ kind: "buy", priceCents: 100, slug: "sumi-e" });
   });
 
   it("hides buy when the slug is allow-listed but its Stripe price env is unset", () => {
