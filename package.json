@@ -12,6 +12,7 @@
     "seed": "tsx scripts/seed-puzzles.ts",
     "seed-seal": "tsx scripts/seed-seal-calendar.ts",
     "seed-skins": "tsx scripts/seed-skins.ts",
+    "generate-sfx": "tsx scripts/generate-sfx.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
