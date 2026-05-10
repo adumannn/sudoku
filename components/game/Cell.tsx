@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState, type AnimationEvent } from "react";
 import { cn } from "@/lib/utils";
 
 export interface CellProps {
@@ -14,6 +14,13 @@ export interface CellProps {
   onSelect: () => void;
 }
 
+function prefersReducedMotion(): boolean {
+  return Boolean(
+    typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+  );
+}
+
 export function Cell({
   index,
   value,
@@ -25,30 +32,48 @@ export function Cell({
   conflict,
   onSelect,
 }: CellProps) {
+  const previousValue = useRef(value);
+  const [inkPlace, setInkPlace] = useState(false);
+
+  useEffect(() => {
+    const wasEmpty = previousValue.current === 0;
+    const isPlacedDigit = value !== 0;
+
+    if (!given && wasEmpty && isPlacedDigit && !prefersReducedMotion()) {
+      setInkPlace(true);
+    }
+
+    if (!isPlacedDigit) {
+      setInkPlace(false);
+    }
+
+    previousValue.current = value;
+  }, [given, value]);
+
+  const onAnimationEnd = (event: AnimationEvent<HTMLButtonElement>) => {
+    if (event.currentTarget !== event.target) return;
+    setInkPlace(false);
+  };
+
   return (
     <button
       type="button"
       onClick={onSelect}
+      onAnimationEnd={onAnimationEnd}
       aria-label={`cell-${index} ${value || "empty"}`}
       className={cn(
         "hako-cell",
         given && "given",
         !given && value && "player",
+        inkPlace && "ink-place",
         peer && !selected && "peer",
         sameVal && !selected && "same",
         selected && "selected",
-        conflict && "conflict"
+        conflict && "conflict",
       )}
     >
       {value ? (
-        <motion.span
-          key={`${index}-${value}`}
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.12 }}
-        >
-          {value}
-        </motion.span>
+        <span className="cell-value">{value}</span>
       ) : note?.length ? (
         <div className="grid grid-cols-3 gap-px text-[0.5rem] leading-none text-moss p-0.5 w-full h-full font-mono">
           {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
