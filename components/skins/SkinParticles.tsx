@@ -59,7 +59,8 @@ export function SkinParticles({ paletteKey }: SkinParticlesProps) {
     if (!cfg) return; // unknown palette → render nothing
 
     const fragment = document.createDocumentFragment();
-    const driftPx = typeof window !== "undefined" ? window.innerWidth + 80 : 800;
+    // useEffect only runs on the client; window is always defined here.
+    const driftPx = window.innerWidth + 80;
 
     for (let i = 0; i < cfg.count; i++) {
       const s = document.createElement("span");
