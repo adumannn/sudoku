@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
+import { cookies } from "next/headers";
+import { hasSupabaseAuthCookie } from "@/lib/supabase/auth-cookie";
 import { createServerClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import type { SkinRecord } from "./types";
@@ -46,15 +48,20 @@ const fetchAllSkins = unstable_cache(
 // <SkinChip /> all call getViewer(); without this, each call re-queries
 // Supabase. With cache, the first call's promise is reused.
 export const getViewer = cache(async (): Promise<Viewer> => {
-  const sb = createServerClient();
-
   const logQueryError = (where: string, error: unknown) => {
     if (error) console.error(`[skins/viewer] ${where}:`, error);
   };
 
+  const allSkinsPromise = fetchAllSkins();
+  if (!hasSupabaseAuthCookie(cookies().getAll())) {
+    return { ...EMPTY_VIEWER, allSkins: await allSkinsPromise };
+  }
+
+  const sb = createServerClient();
+
   // Skins (cached cross-request) and the auth check are independent — fire in parallel.
   const [allSkins, userResult] = await Promise.all([
-    fetchAllSkins(),
+    allSkinsPromise,
     sb.auth.getUser(),
   ]);
   const { data: { user }, error: userError } = userResult;
