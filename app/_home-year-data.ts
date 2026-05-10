@@ -13,13 +13,15 @@ export interface HomeYearData {
   yearTotal: number;
   completedTodayElapsed: number | undefined;
   freezePrompt: { date: string; kanji: string; remaining: number } | null;
-  profileCity: string | null;
 }
 
 /**
  * Per-user year-range queries shared by HomeHeroSection and HomeYearSection.
- * Deduped within a single request via React's cache(), so the two Suspense
- * children don't double-fetch.
+ * Deduped within a single request via React's cache(), keyed by the argument
+ * tuple. Callers MUST pass the same `today` string (and `year`) by value
+ * across both call sites in a request — derive once at the page level and
+ * thread through. Inline `todayUTC()` calls at multiple sites are fine
+ * because the function is pure-by-day, but verify before changing.
  */
 export const fetchHomeYearData = cache(async (
   userId: string,
@@ -109,6 +111,5 @@ export const fetchHomeYearData = cache(async (
     yearTotal,
     completedTodayElapsed,
     freezePrompt,
-    profileCity: profile?.city ?? null,
   };
 });
