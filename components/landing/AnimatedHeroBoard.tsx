@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { VermillionStamp } from "./VermillionStamp";
 
 // 9×9 grid of given digits (sumi/black, immutable). 32 non-null entries.
@@ -85,6 +86,11 @@ export const FILL_QUEUE: ReadonlyArray<{ r: number; c: number; value: number }> 
   { r: 7, c: 8, value: 5 },
 ];
 
+const TICK_MS = 250;
+const SEAL_DELAY_MS = 500;
+const FILL_TOTAL_MS = TICK_MS * FILL_QUEUE.length; // 9000ms
+const CYCLE_TOTAL_MS = FILL_TOTAL_MS + SEAL_DELAY_MS + 380; // +seal animation
+
 export interface AnimatedHeroBoardProps {
   seqLabel: string;
 }
@@ -116,9 +122,37 @@ const GIVENS_COUNT = 32;
 const START_PLACED_COUNT = 13;
 
 export function AnimatedHeroBoard({ seqLabel }: AnimatedHeroBoardProps): JSX.Element {
-  // Placeholder static state — animation is wired in Task 5.
-  const placedCount = FILL_QUEUE.length;
-  const sealVisible = true;
+  const [placedCount, setPlacedCount] = useState(0);
+  const [sealVisible, setSealVisible] = useState(false);
+  const timeoutsRef = useRef<number[]>([]);
+
+  const clearTimers = useCallback(() => {
+    for (const id of timeoutsRef.current) {
+      window.clearTimeout(id);
+    }
+    timeoutsRef.current = [];
+  }, []);
+
+  const play = useCallback(() => {
+    clearTimers();
+    setPlacedCount(0);
+    setSealVisible(false);
+
+    for (let i = 1; i <= FILL_QUEUE.length; i++) {
+      const id = window.setTimeout(() => setPlacedCount(i), TICK_MS * i);
+      timeoutsRef.current.push(id);
+    }
+    const sealId = window.setTimeout(
+      () => setSealVisible(true),
+      FILL_TOTAL_MS + SEAL_DELAY_MS,
+    );
+    timeoutsRef.current.push(sealId);
+  }, [clearTimers]);
+
+  useEffect(() => {
+    play();
+    return clearTimers;
+  }, [play, clearTimers]);
 
   const placed = GIVENS_COUNT + START_PLACED_COUNT + placedCount;
   const toGo = FILL_QUEUE.length - placedCount;
