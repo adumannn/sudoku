@@ -32,6 +32,7 @@ describe("resolveActiveSkin — daily surface", () => {
   it("returns the daily's locked skin regardless of override", () => {
     const result = resolveActiveSkin({
       surface: "daily",
+      userId: "u-1",
       activeSkinId: "s-sumi",
       isPro: true,
       ownedSkinIds: new Set(["s-sumi"]),
@@ -46,6 +47,7 @@ describe("resolveActiveSkin — daily surface", () => {
   it("falls back to default if daily has no skin_id", () => {
     const result = resolveActiveSkin({
       surface: "daily",
+      userId: "u-1",
       activeSkinId: null,
       isPro: false,
       ownedSkinIds: new Set(),
@@ -55,12 +57,27 @@ describe("resolveActiveSkin — daily surface", () => {
     });
     expect(result.slug).toBe("default");
   });
+
+  it("anonymous viewers still see the daily's published skin", () => {
+    const result = resolveActiveSkin({
+      surface: "daily",
+      userId: null,
+      activeSkinId: null,
+      isPro: false,
+      ownedSkinIds: new Set(),
+      dailySkinId: "s-spring",
+      today: "2026-09-01",
+      skins: SKINS,
+    });
+    expect(result.slug).toBe("spring-2026");
+  });
 });
 
 describe("resolveActiveSkin — home/casual surface", () => {
   it("uses override when Pro user has it set and is entitled", () => {
     const result = resolveActiveSkin({
       surface: "home",
+      userId: "u-1",
       activeSkinId: "s-sumi",
       isPro: true,
       ownedSkinIds: new Set(),
@@ -74,6 +91,7 @@ describe("resolveActiveSkin — home/casual surface", () => {
   it("falls back to current-date season for free user even with override set", () => {
     const result = resolveActiveSkin({
       surface: "home",
+      userId: "u-1",
       activeSkinId: "s-sumi",        // override is set on profile
       isPro: false,
       ownedSkinIds: new Set(),       // but free user has no entitlement
@@ -87,6 +105,7 @@ describe("resolveActiveSkin — home/casual surface", () => {
   it("returns the current-date season skin when no override", () => {
     const result = resolveActiveSkin({
       surface: "casual",
+      userId: "u-1",
       activeSkinId: null,
       isPro: false,
       ownedSkinIds: new Set(),
@@ -100,6 +119,7 @@ describe("resolveActiveSkin — home/casual surface", () => {
   it("returns default when no season covers today", () => {
     const result = resolveActiveSkin({
       surface: "home",
+      userId: "u-1",
       activeSkinId: null,
       isPro: false,
       ownedSkinIds: new Set(),
@@ -113,6 +133,7 @@ describe("resolveActiveSkin — home/casual surface", () => {
   it("ex-Pro user keeps purchased skin entitlement", () => {
     const result = resolveActiveSkin({
       surface: "home",
+      userId: "u-1",
       activeSkinId: "s-sumi",
       isPro: false,
       ownedSkinIds: new Set(["s-sumi"]),
@@ -124,10 +145,42 @@ describe("resolveActiveSkin — home/casual surface", () => {
   });
 });
 
+describe("resolveActiveSkin — anonymous viewer", () => {
+  it("home surface returns default even mid-season", () => {
+    const result = resolveActiveSkin({
+      surface: "home",
+      userId: null,
+      activeSkinId: null,
+      isPro: false,
+      ownedSkinIds: new Set(),
+      dailySkinId: null,
+      today: "2026-04-01",           // mid-spring — would otherwise themeify
+      skins: SKINS,
+    });
+    expect(result.slug).toBe("default");
+    expect(result.paletteKey).toBe("default");
+  });
+
+  it("casual surface returns default even mid-season", () => {
+    const result = resolveActiveSkin({
+      surface: "casual",
+      userId: null,
+      activeSkinId: null,
+      isPro: false,
+      ownedSkinIds: new Set(),
+      dailySkinId: null,
+      today: "2026-07-15",           // mid-summer
+      skins: SKINS,
+    });
+    expect(result.slug).toBe("default");
+  });
+});
+
 describe("resolveActiveSkin — empty input guard", () => {
   it("returns hardcoded default when skins is empty (home surface)", () => {
     const result = resolveActiveSkin({
       surface: "home",
+      userId: "u-1",
       activeSkinId: null,
       isPro: false,
       ownedSkinIds: new Set(),
@@ -143,6 +196,7 @@ describe("resolveActiveSkin — empty input guard", () => {
   it("returns hardcoded default when skins is empty (daily surface)", () => {
     const result = resolveActiveSkin({
       surface: "daily",
+      userId: "u-1",
       activeSkinId: null,
       isPro: false,
       ownedSkinIds: new Set(),

@@ -19,6 +19,7 @@ interface Props {
   dailyDate?: string;
   dailyNumber?: number;
   sfxEnabled?: boolean;
+  signedIn?: boolean;
 }
 
 const DIFF_LABEL: Record<Difficulty, string> = {
@@ -34,6 +35,7 @@ export function GameShell({
   dailyDate,
   dailyNumber,
   sfxEnabled = false,
+  signedIn = false,
 }: Props) {
   const skin = useSkin();
   const load = useGame((s) => s.load);
@@ -341,7 +343,7 @@ export function GameShell({
         </div>
       )}
 
-      <WinModal />
+      <WinModal signedIn={signedIn} />
     </>
   );
 }

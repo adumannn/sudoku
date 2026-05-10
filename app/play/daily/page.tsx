@@ -6,6 +6,7 @@ import { Difficulty } from "@/lib/sudoku/types";
 import { resolveActiveSkinServer } from "@/lib/skins/server";
 import { SkinProvider } from "@/components/theme/SkinContext";
 import { getSfxEnabledServer } from "@/lib/sfx/server";
+import { getViewer } from "@/lib/skins/viewer";
 
 export default async function Daily() {
   const sb = createServerClient();
@@ -17,10 +18,11 @@ export default async function Daily() {
     .maybeSingle();
   if (!data) notFound();
 
-  const [skin, sfxEnabled] = await Promise.all([
-    resolveActiveSkinServer({ surface: "daily", dailyDate: date }),
+  const [viewer, sfxEnabled] = await Promise.all([
+    getViewer(),
     getSfxEnabledServer(),
   ]);
+  const skin = await resolveActiveSkinServer({ surface: "daily", dailyDate: date, viewer });
 
   return (
     <div data-skin={skin.paletteKey}>
@@ -31,6 +33,7 @@ export default async function Daily() {
           dailyDate={date}
           dailyNumber={data.seq}
           sfxEnabled={sfxEnabled}
+          signedIn={!!viewer.userId}
         />
       </SkinProvider>
     </div>

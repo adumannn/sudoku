@@ -14,7 +14,11 @@ import { playSfx } from "@/lib/sfx";
 import { SealStamp } from "@/lib/vfx/SealStamp";
 import type { SealEntry, YearSeries } from "@/lib/seal/types";
 
-export function WinModal() {
+interface WinModalProps {
+  signedIn?: boolean;
+}
+
+export function WinModal({ signedIn = false }: WinModalProps) {
   const isComplete = useGame((s) => s.isComplete);
   const elapsed = useGame((s) => s.elapsed);
   const errorsMade = useGame((s) => s.errorsMade);
@@ -90,8 +94,11 @@ export function WinModal() {
   };
 
   // Auto-submit the moment the modal opens for a daily; otherwise just fetch the year for the strip.
+  // Anonymous viewers skip both — there's no account to record against and the
+  // year-scroll API rejects unauthenticated reads.
   useEffect(() => {
     if (!open) return;
+    if (!signedIn) return;
     if (dailyDate && !submitted && !submitting) {
       void submitImpl(consent);
     } else if (!dailyDate) {
@@ -101,7 +108,7 @@ export function WinModal() {
       void fetchYear();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, dailyDate]);
+  }, [open, dailyDate, signedIn]);
 
   const onConsentChange = (next: boolean) => {
     setConsent(next);
@@ -182,7 +189,7 @@ export function WinModal() {
               </div>
             )}
 
-            {dailyDate && (
+            {dailyDate && signedIn && (
               <div className="space-y-3 mt-4 text-left">
                 <label className="flex items-center gap-2 text-[13px] cursor-pointer">
                   <input
@@ -222,36 +229,75 @@ export function WinModal() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-6">
-            {dailyDate ? (
-              <a
-                href={`/api/share/seal/${dailyDate}`}
-                target="_blank"
-                rel="noopener"
-                className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
-              >
-                share
-              </a>
+          {!signedIn && (
+            <p className="ital text-moss text-[13px] mt-5 leading-snug">
+              — without an account, this won&rsquo;t be saved.
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            {!signedIn ? (
+              <>
+                {dailyDate ? (
+                  <a
+                    href={`/api/share/seal/${dailyDate}`}
+                    target="_blank"
+                    rel="noopener"
+                    className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
+                  >
+                    share
+                  </a>
+                ) : (
+                  <Link
+                    href={difficulty ? `/play/${difficulty}` : "/"}
+                    className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
+                  >
+                    play another
+                  </Link>
+                )}
+                <Link
+                  href={`/auth/signup?next=${encodeURIComponent(
+                    dailyDate ? "/" : `/play/${difficulty ?? "hard"}`,
+                  )}`}
+                  className="btn-hako red justify-center font-mincho text-[14px] py-3"
+                >
+                  sign in to keep this →
+                </Link>
+              </>
             ) : (
-              <Link href="/" className="btn-hako ghost justify-center font-mincho text-[14px] py-3">
-                home
-              </Link>
-            )}
-            {dailyDate && (
-              <Link
-                href="/"
-                className="btn-hako red justify-center font-mincho text-[14px] py-3"
-              >
-                tomorrow →
-              </Link>
-            )}
-            {!dailyDate && difficulty && (
-              <Link
-                href={`/play/${difficulty}`}
-                className="btn-hako red justify-center font-mincho text-[14px] py-3"
-              >
-                play another
-              </Link>
+              <>
+                {dailyDate ? (
+                  <a
+                    href={`/api/share/seal/${dailyDate}`}
+                    target="_blank"
+                    rel="noopener"
+                    className="btn-hako ghost justify-center font-mincho text-[14px] py-3"
+                  >
+                    share
+                  </a>
+                ) : (
+                  <Link href="/" className="btn-hako ghost justify-center font-mincho text-[14px] py-3">
+                    home
+                  </Link>
+                )}
+                {dailyDate ? (
+                  <Link
+                    href="/"
+                    className="btn-hako red justify-center font-mincho text-[14px] py-3"
+                  >
+                    tomorrow →
+                  </Link>
+                ) : (
+                  difficulty && (
+                    <Link
+                      href={`/play/${difficulty}`}
+                      className="btn-hako red justify-center font-mincho text-[14px] py-3"
+                    >
+                      play another
+                    </Link>
+                  )
+                )}
+              </>
             )}
           </div>
         </div>
