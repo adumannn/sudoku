@@ -47,6 +47,7 @@ describe("SfxToggle", () => {
 
     expect(switchButton).toHaveClass("justify-end", "p-1");
     expect(knob).toHaveClass("block", "h-5", "w-5", "bg-bone");
-    expect(knob).not.toHaveClass("absolute", "translate-x-7");
+    expect(knob).not.toHaveClass("absolute");
+    expect(knob).not.toHaveClass("translate-x-7");
   });
 });
