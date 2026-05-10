@@ -14,7 +14,7 @@ vi.mock("@/lib/sfx", () => ({
 }));
 
 describe("SfxToggle", () => {
-  it("keeps the switch track from shrinking beside the long sound label", () => {
+  it("keeps the switch track fixed and pads the off thumb evenly", () => {
     render(<SfxToggle initialEnabled={false} />);
 
     const switchButton = screen.getByRole("switch", {
@@ -25,11 +25,19 @@ describe("SfxToggle", () => {
       .parentElement;
 
     expect(labelColumn).toHaveClass("min-w-0");
-    expect(switchButton).toHaveClass("w-14", "shrink-0");
-    expect(knob).toHaveClass("left-1", "translate-x-0");
+    expect(switchButton).toHaveClass(
+      "inline-flex",
+      "w-14",
+      "shrink-0",
+      "items-center",
+      "justify-start",
+      "p-1",
+    );
+    expect(knob).toHaveClass("block", "h-5", "w-5");
+    expect(knob).not.toHaveClass("absolute");
   });
 
-  it("anchors the enabled knob inside the switch track", () => {
+  it("pads the enabled thumb evenly without translated pixels", () => {
     render(<SfxToggle initialEnabled />);
 
     const switchButton = screen.getByRole("switch", {
@@ -37,6 +45,9 @@ describe("SfxToggle", () => {
     });
     const knob = switchButton.querySelector("span");
 
-    expect(knob).toHaveClass("left-1", "translate-x-7");
+    expect(switchButton).toHaveClass("justify-end", "p-1");
+    expect(knob).toHaveClass("block", "h-5", "w-5", "bg-bone");
+    expect(knob).not.toHaveClass("absolute");
+    expect(knob).not.toHaveClass("translate-x-7");
   });
 });
