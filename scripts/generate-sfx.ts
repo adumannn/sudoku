@@ -149,6 +149,20 @@ function render(name: string, samples: Float32Array): void {
   console.log(`generated ${path.relative(process.cwd(), mp3Path)} (${sizeKb} KB)`);
 }
 
+function makePlace(): Float32Array {
+  const dur = 0.09;
+  // Bandpassed noise at ~1.2kHz gives the dry "tock" attack.
+  const click = expDecay(bandpass(noise(dur), 1200, 4), 0.008);
+  // 220Hz sine adds wooden body under the click.
+  const body = expDecay(sine(220, dur), 0.020);
+  return normalize(
+    mix([
+      { samples: click, gain: 0.4 },
+      { samples: body, gain: 0.6 },
+    ]),
+  );
+}
+
 function checkFfmpeg(): void {
   const result = spawnSync("ffmpeg", ["-version"], { stdio: "pipe" });
   if (result.error || result.status !== 0) {
@@ -160,9 +174,7 @@ function checkFfmpeg(): void {
 function main(): void {
   checkFfmpeg();
   fs.mkdirSync(SFX_DIR, { recursive: true });
-
-  // Probe: render a 1-second 440Hz sine to verify the full pipeline.
-  render("_probe", normalize(sine(440, 1.0)));
+  render("place", makePlace());
 }
 
 main();
