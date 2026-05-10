@@ -19,7 +19,7 @@
 
 **Modified files:**
 - `components/landing/Landing.tsx` — remove inline `VermillionStamp`, `HeroBoard`, `HERO_BOARD`, `HERO_PLAYER`, and the right-panel JSX block; render `<AnimatedHeroBoard seqLabel={...} />` instead. Re-import `VermillionStamp` from the new shared file (other usages in the file remain).
-- `app/globals.css` — add `.hako-seal-stamp` class + keyframe + reduced-motion override at the bottom of the `@layer components` block.
+- `app/globals.css` — add `.hako-hero-seal` class + keyframe + reduced-motion override at the bottom of the `@layer components` block.
 
 ---
 
@@ -115,11 +115,11 @@ Open `app/globals.css` and locate the `@keyframes hako-ink-bleed` block (around 
 Add this block immediately after the closing brace of `@keyframes hako-ink-bleed`:
 
 ```css
-  .hako-seal-stamp {
-    animation: hako-seal-stamp 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  .hako-hero-seal {
+    animation: hako-hero-seal 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  @keyframes hako-seal-stamp {
+  @keyframes hako-hero-seal {
     from {
       opacity: 0;
       transform: rotate(2deg) scale(1.35);
@@ -136,7 +136,7 @@ Add this block immediately after the closing brace of `@keyframes hako-ink-bleed
 Locate the `@media (prefers-reduced-motion: reduce)` block in `globals.css` (around line 685–710). Inside that block, add:
 
 ```css
-  .hako-seal-stamp {
+  .hako-hero-seal {
     animation: none;
   }
 ```
@@ -147,7 +147,7 @@ Locate the `@media (prefers-reduced-motion: reduce)` block in `globals.css` (aro
 
 ```bash
 git add app/globals.css
-git commit -m "style(landing): add hako-seal-stamp keyframe for hero board seal"
+git commit -m "style(landing): add hako-hero-seal keyframe for hero board seal"
 ```
 
 ---
@@ -483,7 +483,7 @@ export function AnimatedHeroBoard({ seqLabel }: AnimatedHeroBoardProps): JSX.Ele
               size={140}
               fontSize={76}
               rotate={8}
-              className="hako-seal-stamp"
+              className="hako-hero-seal"
             />
           </div>
         )}
