@@ -62,18 +62,18 @@ export async function POST(req: NextRequest) {
           originalTarget: result.hint.redirect ? target : undefined,
         };
 
-  // 6. Rate gate
+  // 6. Gemini precondition — short-circuit before consuming quota.
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey)
+    return new Response("[error] GOOGLE_API_KEY not set", { status: 500 });
+
+  // 7. Rate gate
   const gate = await checkAndIncrement(user.id, isPro);
   if (!gate.ok)
     return new Response(
       "Daily AI limit reached. Upgrade to Pro for unlimited.",
       { status: 429 },
     );
-
-  // 7. Stream Gemini
-  const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey)
-    return new Response("[error] GOOGLE_API_KEY not set", { status: 500 });
 
   const ai = new GoogleGenAI({ apiKey });
   const encoder = new TextEncoder();

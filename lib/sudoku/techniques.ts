@@ -83,11 +83,16 @@ export function findHint(b: Board): Hint | null {
   return null;
 }
 
-export function findLockedCandidate(b: Board): Hint | null {
+export function findLockedCandidate(
+  b: Board,
+  opts: { boxIndex?: number } = {},
+): Hint | null {
   // For each box × digit: if all candidate cells for that digit inside the
   // box share a single row or single column, the digit is "locked" — it
-  // can be eliminated from the rest of that line.
+  // can be eliminated from the rest of that line. When `opts.boxIndex` is
+  // set, only that box is considered (target-aware lookup).
   for (let bi = 0; bi < 9; bi++) {
+    if (opts.boxIndex !== undefined && bi !== opts.boxIndex) continue;
     const br = Math.floor(bi / BOX) * BOX;
     const bc = (bi % BOX) * BOX;
     const boxCells: number[] = [];
@@ -141,11 +146,11 @@ export function findLockedCandidate(b: Board): Hint | null {
 
 const cellName = (i: number) => { const [r, c] = rc(i); return `R${r + 1}C${c + 1}`; };
 const unitKind = (u: number[]) => {
-  const [r0] = rc(u[0]), [r1] = rc(u[1]);
-  if (r0 === r1) return `row ${r0 + 1}`;
-  const [, c0] = rc(u[0]), [, c1] = rc(u[1]);
-  if (c0 === c1) return `column ${c0 + 1}`;
-  return `box`;
+  const coords = u.map(rc);
+  const [r0, c0] = coords[0];
+  if (coords.every(([r]) => r === r0)) return `row ${r0 + 1}`;
+  if (coords.every(([, c]) => c === c0)) return `column ${c0 + 1}`;
+  return `box ${Math.floor(r0 / BOX) * BOX + Math.floor(c0 / BOX) + 1}`;
 };
 
 export type HintResult =
@@ -205,7 +210,7 @@ export function findHintForCell(
   }
 
   // 3. Pro-tier techniques touching target
-  const proHint = findProHintTouching(b, target, tr, tc, tbox);
+  const proHint = findProHintTouching(b, target, tbox);
   if (proHint) {
     if (opts.proTechniques) return { hint: proHint, tier: "pro" };
     // Downgrade for free user
@@ -226,30 +231,23 @@ export function findHintForCell(
 function findProHintTouching(
   b: Board,
   target: number,
-  tr: number,
-  tc: number,
   tbox: number,
 ): Hint | null {
-  // Locked candidate touching target box
-  const lc = findLockedCandidate(b);
-  if (lc) {
-    const lcBox = Math.floor(rc(lc.index)[0] / BOX) * BOX + Math.floor(rc(lc.index)[1] / BOX);
-    if (lcBox === tbox) return lc;
-  }
-  // Naked pair touching target unit
-  const np = findNakedPair(b);
-  if (np) {
-    const sameRow = rc(np.index)[0] === tr;
-    const sameCol = rc(np.index)[1] === tc;
-    const sameBox =
-      Math.floor(rc(np.index)[0] / BOX) * BOX + Math.floor(rc(np.index)[1] / BOX) === tbox;
-    if (sameRow || sameCol || sameBox) return np;
-  }
+  // Locked candidate confined to the target's box.
+  const lc = findLockedCandidate(b, { boxIndex: tbox });
+  if (lc) return lc;
+  // Naked pair in any unit (row/col/box) that contains the target.
+  const np = findNakedPair(b, { unitFilter: (u) => u.includes(target) });
+  if (np) return np;
   return null;
 }
 
-export function findNakedPair(b: Board): Hint | null {
+export function findNakedPair(
+  b: Board,
+  opts: { unitFilter?: (u: number[]) => boolean } = {},
+): Hint | null {
   for (const unit of allUnits) {
+    if (opts.unitFilter && !opts.unitFilter(unit)) continue;
     const empties = unit.filter((i) => !b[i]);
     const pairs: { i: number; cs: number[] }[] = empties
       .map((i) => ({ i, cs: candidates(b, i) }))

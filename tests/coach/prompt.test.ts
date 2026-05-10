@@ -55,12 +55,37 @@ describe("SYSTEM_PROMPT", () => {
 });
 
 describe("userMessage — hint payloads", () => {
-  it("naked-single nudge omits cell and digit", () => {
+  it("naked-single nudge strips every coordinate- and digit-bearing field", () => {
     const msg = userMessage({ kind: "hint", hint: nakedSingle }, "nudge");
     expect(msg).toContain("Technique: naked-single");
     expect(msg).toContain("Mode: nudge");
     expect(msg).not.toContain("Target cell:");
     expect(msg).not.toContain("Digit:");
+    // Naked-single's `unit` is "cell R1C1" — must be omitted, not surfaced.
+    expect(msg).not.toContain("R1C1");
+    expect(msg).not.toContain("Unit: cell");
+    expect(msg).not.toContain("Reasoning:");
+    expect(msg).not.toContain("Supporting cells:");
+  });
+
+  it("hidden-single nudge keeps the unit label but strips cells/digit/reasoning", () => {
+    const msg = userMessage({ kind: "hint", hint: hiddenSingle }, "nudge");
+    expect(msg).toContain("Technique: hidden-single");
+    expect(msg).toContain("Unit: row 2");
+    expect(msg).toContain("Mode: nudge");
+    expect(msg).not.toContain("Target cell:");
+    expect(msg).not.toContain("Digit: 7");
+    expect(msg).not.toContain("R2C5");
+    expect(msg).not.toContain("Supporting cells:");
+    expect(msg).not.toContain("Reasoning:");
+  });
+
+  it("redirect hint in nudge mode does not name a cell", () => {
+    const msg = userMessage({ kind: "hint", hint: redirectHint, originalTarget: 40 }, "nudge");
+    expect(msg).toContain("Mode: nudge");
+    expect(msg).not.toContain("R5C5");
+    expect(msg).not.toContain("R1C1");
+    expect(msg).not.toContain("Original target");
   });
 
   it("naked-single ask includes cell and digit", () => {

@@ -51,18 +51,18 @@ describe("findLockedCandidate", () => {
 
 describe("findNakedPair", () => {
   it("detects two cells in a unit sharing the same two candidates", () => {
-    // Row 0: cells (0,0) and (0,1) empty, (0,2)..(0,8) = 3,4,5,6,7,8,9.
-    // Both (0,0) and (0,1) have candidates {1,2} → naked pair in row 0.
-    // The pair must eliminate at least one candidate elsewhere in some unit
-    // it shares — column 0 and box 0 still have other empty cells whose
-    // candidates include 1 or 2, so the constraint is non-vacuous.
+    // Row 0 has 3..9 placed in cols 2..8, leaving (0,0) and (0,1) with
+    // candidates {1,2}. The pair is vacuous in row 0 itself (no other
+    // empty cells to eliminate from), but it's a meaningful naked pair
+    // inside box 0, where (1,0)/(1,1)/(1,2)/(2,0)/(2,1)/(2,2) still have
+    // 1 and 2 in their candidate sets.
     const b = Array(81).fill(0);
     for (let c = 2; c <= 8; c++) b[c] = c + 1; // row 0, cols 2..8 = 3..9
     const hint = findNakedPair(b);
     expect(hint).not.toBeNull();
     expect(hint!.technique).toBe("naked-pair");
     expect(hint!.value).toBeNull();
-    expect(hint!.unit).toMatch(/row 1/);
+    expect(hint!.unit).toBe("box 1");
     expect(hint!.cells.sort()).toEqual([0, 1]);
   });
 

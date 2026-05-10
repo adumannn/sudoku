@@ -34,20 +34,35 @@ export function userMessage(payload: CoachPayload, kind: CoachKind): string {
 
   const { hint, originalTarget } = payload;
   const lines: string[] = [];
+
+  if (kind === "nudge") {
+    // Nudge mode: deliberately strip every field that names a cell or digit.
+    // Engine-derived `unit`, `cells`, and `reason` all carry coordinates;
+    // emit only the technique and (if available) the unit-level label.
+    if (hint.redirect) {
+      lines.push("The selected cell has no easy hint — point the player to look elsewhere on the board, without naming a cell.");
+    }
+    lines.push(`Technique: ${hint.technique}`);
+    if (!hint.unit.startsWith("cell ")) {
+      lines.push(`Unit: ${hint.unit}`);
+    }
+    lines.push("Mode: nudge");
+    return lines.join("\n");
+  }
+
+  // Ask mode
   if (hint.redirect && originalTarget != null) {
     lines.push(redirectLine(originalTarget, hint.index));
   }
   lines.push(`Technique: ${hint.technique}`);
   lines.push(`Unit: ${hint.unit}`);
-  if (kind === "ask") {
-    lines.push(`Target cell: ${cellName(hint.index)}`);
-    if (hint.value !== null) lines.push(`Digit: ${hint.value}`);
-  }
+  lines.push(`Target cell: ${cellName(hint.index)}`);
+  if (hint.value !== null) lines.push(`Digit: ${hint.value}`);
   if (hint.cells.length > 0) {
     lines.push(`Supporting cells: ${hint.cells.map(cellName).join(", ")}`);
   }
   lines.push(`Reasoning: ${hint.reason}`);
-  lines.push(`Mode: ${kind}`);
+  lines.push("Mode: ask");
   return lines.join("\n");
 }
 

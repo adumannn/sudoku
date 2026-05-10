@@ -85,6 +85,17 @@ describe("POST /api/coach", () => {
     mockGetSession.mockResolvedValue({ data: { session: { user: { id: "u1" } } } });
     const res = await POST(makeReq({ board: emptyBoard, target: 0, kind: "wat" }));
     expect(res.status).toBe(400);
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 without consuming quota when GOOGLE_API_KEY is unset", async () => {
+    delete process.env.GOOGLE_API_KEY;
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: "u1" } } } });
+    const board = Array(81).fill(0);
+    for (let r = 1; r <= 8; r++) board[r * 9] = r + 1;
+    const res = await POST(makeReq({ board, target: 0, kind: "ask" }));
+    expect(res.status).toBe(500);
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
   });
 
   it("returns 200 with completion text on solved board, no quota consumed", async () => {
@@ -126,6 +137,7 @@ describe("POST /api/coach", () => {
     const board = Array(81).fill(0);
     for (let r = 1; r <= 8; r++) board[r * 9] = r + 1;
     const res = await POST(makeReq({ board, target: 0, kind: "ask" }));
+    expect(res.status).toBe(200);
     await readStream(res);
     const callArg = mockGenerateContentStream.mock.calls[0][0];
     expect(callArg.contents).toContain("Mode: ask");
