@@ -28,6 +28,7 @@ export async function resolveActiveSkinServer(args: ResolveServerArgs): Promise<
 
   return resolveActiveSkin({
     surface: args.surface,
+    userId: viewer.userId,
     activeSkinId: viewer.activeSkinId,
     isPro: viewer.isPro,
     ownedSkinIds: viewer.ownedSkinIds,
