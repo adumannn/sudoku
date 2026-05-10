@@ -11,5 +11,6 @@ export function getPriceIdForSkinSlug(slug: string): string | null {
 }
 
 export function isPurchasableSlug(slug: string): boolean {
-  return slug in SLUG_TO_ENV;
+  // hasOwn-style check so prototype keys ("constructor", "toString", …) don't slip through.
+  return Object.prototype.hasOwnProperty.call(SLUG_TO_ENV, slug);
 }

@@ -77,6 +77,13 @@ describe("getCatalogAction — premium skins", () => {
     const action = getCatalogAction(sumi, viewer({ userId: null, isPro: false }), TODAY);
     expect(action).toEqual({ kind: "buy", priceCents: 300, slug: "sumi-e" });
   });
+
+  it("hides buy when the slug is allow-listed but its Stripe price env is unset", () => {
+    // Premium skin with price_cents set, but no env var → buy CTA would 503 at checkout.
+    delete process.env.STRIPE_PRICE_ID_SKIN_SUMI;
+    const action = getCatalogAction(sumi, viewer({ isPro: false }), TODAY);
+    expect(action).toEqual({ kind: "hidden" });
+  });
 });
 
 describe("getCatalogAction — season skins", () => {

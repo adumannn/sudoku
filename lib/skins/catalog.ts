@@ -1,6 +1,6 @@
 import type { SkinRecord } from "./types";
 import type { Viewer } from "./viewer";
-import { isPurchasableSlug } from "@/lib/stripe/skin-prices";
+import { getPriceIdForSkinSlug } from "@/lib/stripe/skin-prices";
 
 export type CatalogAction =
   | { kind: "hidden" }
@@ -36,11 +36,12 @@ export function getCatalogAction(
   if (viewer.ownedSkinIds.has(skin.id)) {
     return { kind: "wear", skinId: skin.id };
   }
-  if (isPurchasableSlug(skin.slug) && skin.price_cents !== null) {
+  // Real Stripe price ID must be present — not just an allow-listed slug — so a
+  // user never sees "Buy" for a skin whose env var is unset (and would 503 at checkout).
+  if (skin.price_cents !== null && getPriceIdForSkinSlug(skin.slug)) {
     return { kind: "buy", slug: skin.slug, priceCents: skin.price_cents };
   }
-  // Premium skin without a Stripe price configured — treat as hidden so we
-  // don't render a useless "buy" with no env var behind it.
+  // Premium skin without a Stripe price configured — treat as hidden.
   return { kind: "hidden" };
 }
 

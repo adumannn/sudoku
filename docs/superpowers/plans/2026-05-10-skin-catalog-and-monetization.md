@@ -294,7 +294,7 @@ grep -rn "STRIPE_PRICE_ID_PRO" --include="*.md"
 
 If a doc lists `STRIPE_PRICE_ID_PRO`, add the two new vars adjacent to it with this comment:
 
-```
+```env
 # One-off skin price IDs (Stripe, mode: payment).
 # Values come from the Stripe dashboard → Products → <skin name> → Pricing.
 STRIPE_PRICE_ID_SKIN_SUMI=price_xxxxxxxxxxxxxx
@@ -1692,7 +1692,7 @@ Expected: success; new route `/skins` listed in the build output along with `/ap
 
 - [ ] **Step 5: Manual end-to-end smoke**
 
-```
+```bash
 npm run dev
 ```
 
