@@ -271,7 +271,7 @@ export function findNakedPair(
           technique: "naked-pair",
           unit: unitKind(unit),
           cells: [A.i, B.i],
-          reason: `In this ${unitKind(unit)}, ${cellName(A.i)} and ${cellName(B.i)} must be ${A.cs[0]} and ${A.cs[1]} in some order — so ${A.cs[0]} and ${A.cs[1]} are eliminated from the other cells in the ${unitKind(unit)}.`,
+          reason: `In ${unitKind(unit)}, ${cellName(A.i)} and ${cellName(B.i)} must be ${A.cs[0]} and ${A.cs[1]} in some order — so ${A.cs[0]} and ${A.cs[1]} are eliminated from the other cells.`,
         };
       }
     }
