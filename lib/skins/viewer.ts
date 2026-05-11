@@ -1,9 +1,7 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { cookies } from "next/headers";
-import { hasSupabaseAuthCookie } from "@/lib/supabase/auth-cookie";
-import { createServerClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
+import { getCurrentUser, getProfile } from "@/lib/auth/identity";
 import type { SkinRecord } from "./types";
 
 export interface Viewer {
@@ -67,33 +65,20 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     if (error) console.error(`[skins/viewer] ${where}:`, error);
   };
 
-  const allSkinsPromise = fetchAllSkins();
-  if (!hasSupabaseAuthCookie(cookies().getAll())) {
-    return buildEmptyViewer(await allSkinsPromise);
-  }
-
-  const sb = createServerClient();
-
-  // Skins (cached cross-request) and the auth check are independent — fire in parallel.
-  const [allSkins, userResult] = await Promise.all([
-    allSkinsPromise,
-    sb.auth.getUser(),
+  const [{ user, sb }, profile, allSkins] = await Promise.all([
+    getCurrentUser(),
+    getProfile(),
+    fetchAllSkins(),
   ]);
-  const { data: { user }, error: userError } = userResult;
-  logQueryError("auth.getUser", userError);
 
   if (!user) {
     return buildEmptyViewer(allSkins);
   }
 
-  const [
-    { data: profile, error: profileError },
-    { data: ents, error: entsError },
-  ] = await Promise.all([
-    sb.from("profiles").select("active_skin_id,is_pro").eq("id", user.id).maybeSingle(),
-    sb.from("user_skin_entitlements").select("skin_id").eq("user_id", user.id),
-  ]);
-  logQueryError("profiles.select", profileError);
+  const { data: ents, error: entsError } = await sb
+    .from("user_skin_entitlements")
+    .select("skin_id")
+    .eq("user_id", user.id);
   logQueryError("user_skin_entitlements.select", entsError);
 
   return {
