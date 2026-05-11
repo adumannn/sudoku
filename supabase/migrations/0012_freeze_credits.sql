@@ -11,7 +11,7 @@ create table public.freeze_purchases (
   stripe_session_id text not null unique,
   sku text not null,
   quantity int not null check (quantity > 0),
-  amount_cents int not null,
+  amount_cents int not null check (amount_cents >= 0),
   created_at timestamptz not null default now()
 );
 
