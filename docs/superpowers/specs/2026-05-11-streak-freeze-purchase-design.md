@@ -80,7 +80,7 @@ create index freeze_purchases_user_idx on public.freeze_purchases(user_id, creat
 alter table public.freeze_purchases enable row level security;
 create policy fp_owner_select on public.freeze_purchases for select
   using (auth.uid() = user_id);
--- No insert policy: writes happen via service role from /api/freezes/grant.
+-- No insert/update/delete policy: writes happen via the security-definer RPC below.
 ```
 
 The unique constraint on `stripe_session_id` is the idempotency primitive. The grant endpoint inserts first; if the insert succeeds, it increments `freeze_credits`; if the insert fails with 23505, it returns the current balance without double-crediting.
@@ -217,13 +217,13 @@ Existing route, modified to support credits + non-Pro:
 3. `getProfile()`: unchanged but now also reads `freeze_credits`.
 4. **Drop the `pro-only` 403.**
 5. Already-completed check: unchanged.
-6. **Consume in order** via `chooseFreezeSource(profile, allotmentUsed)`:
+6. **Consume in order** via `chooseFreezeSource(profile, allotmentUsed, allotment)`:
    - `"allotment"` — Pro with allotment available: insert into `streak_freezes` directly (existing logic). On 23505 → 400 `already-frozen`.
    - `"credit"` — credits available (Pro with exhausted allotment, or any non-Pro with credits): call `consume_freeze_credit` RPC. If it returns `-1` → 403 `no-freezes` (covers both "raced to 0" and "already-frozen").
    - `"none"` — 403 `no-freezes`.
 7. Return `{ ok: true, source: "allotment" | "credit", remaining_allotment, balance }`.
 
-The "allotment first" rule is captured in a small pure helper `chooseFreezeSource(profile, allotmentUsed)` exported from `lib/seal/freeze.ts`, so the route just consults it.
+The "allotment first" rule is captured in a small pure helper `chooseFreezeSource(profile, allotmentUsed, allotment)` exported from `lib/seal/freeze.ts`, so the route just consults it.
 
 ---
 
@@ -235,7 +235,7 @@ The "allotment first" rule is captured in a small pure helper `chooseFreezeSourc
 
 Structure:
 
-```
+```text
 [Sheet]
   [Header]  "Streak Freezes"
   [Balance row]
@@ -273,7 +273,7 @@ This requires the menu to host the sheet state. Since `UserMenu` is currently an
 
 Replace the existing single inline link (lines 127–138 of `components/year-scroll/TodayCard.tsx`) with a block:
 
-```
+```text
 [border-top, pt-4, max-w-44ch]
   ital sumi:    "yesterday — 火 — missed."
   if can-apply: [button "apply freeze"]  small-mono subtext: "1 monthly · 0 credits"  or  "0 monthly · 3 credits"
@@ -345,7 +345,7 @@ The "streak existed" condition: yesterday is `empty`, and the user has at least 
 
 **Unit (Vitest):**
 
-- `chooseFreezeSource(profile, allotmentUsed)` — table-driven: Pro/allotment-left → "allotment"; Pro/no-allotment/credits → "credit"; non-Pro/credits → "credit"; nothing → "none".
+- `chooseFreezeSource(profile, allotmentUsed, allotment)` — table-driven: Pro/allotment-left → "allotment"; Pro/no-allotment/credits → "credit"; non-Pro/credits → "credit"; nothing → "none".
 - `hasRecoverableStreak(series, today)` — table-driven: empty series → false; one completion 2 days ago → true; only completion is today → false.
 - `getFreezeQuantity(sku)` — round-trip on both SKUs.
 
