@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth/identity";
-import { getProfile } from "@/lib/auth/identity";
+import { getCurrentUser, getProfile } from "@/lib/auth/identity";
 import { formatTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { computeCityCounts, computeUserStanding } from "@/lib/stats/leaderboard";
