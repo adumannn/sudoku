@@ -55,7 +55,7 @@ export const fetchHomeYearData = cache(async (
     sb.from("streak_freezes").select("date")
       .eq("user_id", userId)
       .gte("date", yearStart).lte("date", yearEnd),
-    sb.from("profiles").select("created_at,is_pro,city").eq("id", userId).maybeSingle(),
+    sb.from("profiles").select("created_at,is_pro,city,freeze_credits").eq("id", userId).maybeSingle(),
     sb.from("daily_puzzles")
       .select("date, skin_id, skins(seal_kanji)")
       .gte("date", yearStart).lte("date", yearEnd),
