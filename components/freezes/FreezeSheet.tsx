@@ -73,7 +73,7 @@ export function FreezeSheet({
 
         <div className="px-8 pb-6 border-t border-bone/10 pt-4">
           <p className="mono text-[10px] tracking-[0.18em] uppercase text-bone/40">
-            Sandbox · use test card 4242 4242 4242 4242
+            Sandbox · use Stripe test card ending in 4242
           </p>
         </div>
       </DialogContent>
