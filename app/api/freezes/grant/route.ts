@@ -43,7 +43,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad-sku" }, { status: 400 });
   }
   const quantity = getFreezeQuantity(sku);
-  const amountCents = session.amount_total ?? getFreezeAmountCents(sku);
+  const expectedAmountCents = getFreezeAmountCents(sku);
+  if (session.amount_total !== expectedAmountCents) {
+    console.error("[freezes/grant] amount mismatch:", {
+      sessionId: session.id,
+      sku,
+      amount_total: session.amount_total,
+      expectedAmountCents,
+    });
+    return NextResponse.json({ error: "bad-session" }, { status: 400 });
+  }
+  const amountCents = session.amount_total;
 
   const { data, error } = await sb.rpc("grant_freeze_credits", {
     p_user_id: user.id,

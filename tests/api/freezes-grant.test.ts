@@ -123,6 +123,20 @@ describe("POST /api/freezes/grant", () => {
     expect(body).toEqual({ ok: true, balance: 1, granted: 0 });
   });
 
+  it("400s when amount_total does not match the expected SKU price", async () => {
+    getCurrentUser.mockResolvedValue(authedUser());
+    sessionsRetrieve.mockResolvedValue({
+      id: "sess_x",
+      payment_status: "paid",
+      amount_total: 999,  // expected 100 for freeze_1
+      metadata: { user_id: "u1", sku: "freeze_1", quantity: "1" },
+    });
+    const res = await postGrant({ session_id: "sess_x" });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("bad-session");
+  });
+
   it("503s when the RPC errors", async () => {
     getCurrentUser.mockResolvedValue(authedUser());
     sessionsRetrieve.mockResolvedValue({
