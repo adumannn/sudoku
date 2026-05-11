@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "checkout temporarily unavailable" }, { status: 503 });
   }
   if (!user) {
-    return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_SITE_URL!));
+    return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_SITE_URL!), { status: 303 });
   }
 
   // Form-encoded body: { slug: "sumi-e" }

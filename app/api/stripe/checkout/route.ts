@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth/identity";
 export async function POST() {
   const { user } = await getCurrentUser();
   if (!user)
-    return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_SITE_URL!));
+    return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_SITE_URL!), { status: 303 });
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   const session = await stripe.checkout.sessions.create({

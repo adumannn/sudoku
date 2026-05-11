@@ -37,7 +37,7 @@ describe("POST /api/freezes/checkout", () => {
   it("redirects to /auth/login when unauthenticated", async () => {
     getCurrentUser.mockResolvedValue({ user: null });
     const res = await postForm({ sku: "freeze_1" });
-    expect(res.status).toBe(307);
+    expect(res.status).toBe(303);
     expect(res.headers.get("location")).toContain("/auth/login");
   });
 
