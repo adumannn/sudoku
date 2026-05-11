@@ -15,6 +15,10 @@ export async function POST(req: Request) {
   if (!body?.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
     return NextResponse.json({ error: "bad-date" }, { status: 400 });
   }
+  const parsed = new Date(`${body.date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== body.date) {
+    return NextResponse.json({ error: "bad-date" }, { status: 400 });
+  }
 
   const targetMs = Date.parse(body.date + "T23:59:59Z");
   const ageHours = (Date.now() - targetMs) / 1000 / 3600;
@@ -27,22 +31,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "no-profile" }, { status: 401 });
   }
 
-  const { data: existing } = await sb
+  const { data: existing, error: existingError } = await sb
     .from("daily_results")
     .select("date")
     .eq("user_id", userId)
     .eq("date", body.date)
     .maybeSingle();
+  if (existingError) {
+    console.error("[seal/freeze] daily_results lookup:", existingError);
+    return NextResponse.json({ error: "db" }, { status: 500 });
+  }
   if (existing) {
     return NextResponse.json({ error: "already-completed" }, { status: 400 });
   }
 
   const grantedMonth = body.date.slice(0, 7) + "-01";
-  const { count } = await sb
+  const { count, error: countError } = await sb
     .from("streak_freezes")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("granted_month", grantedMonth);
+  if (countError) {
+    console.error("[seal/freeze] streak_freezes count:", countError);
+    return NextResponse.json({ error: "db" }, { status: 500 });
+  }
   const used = count ?? 0;
   const allotment = profile.is_pro ? computeAllotment(profile.created_at, grantedMonth) : 0;
 
