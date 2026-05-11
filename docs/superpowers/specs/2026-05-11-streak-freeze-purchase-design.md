@@ -96,7 +96,9 @@ create or replace function public.grant_freeze_credits(
   p_sku text,
   p_quantity int,
   p_amount_cents int
-) returns int  -- new balance, or current balance on duplicate session
+) returns table(balance int, granted int)
+  -- balance: new credit balance (or current balance on replay)
+  -- granted: p_quantity on first call, 0 on duplicate session (idempotent replay)
 language plpgsql security definer as $$
 declare
   v_balance int;
@@ -106,15 +108,16 @@ begin
   on conflict (stripe_session_id) do nothing;
 
   if not found then
+    -- replay: session already granted; return current balance with granted = 0
     select freeze_credits into v_balance from public.profiles where id = p_user_id;
-    return v_balance;
+    balance := v_balance; granted := 0; return next; return;
   end if;
 
   update public.profiles
      set freeze_credits = freeze_credits + p_quantity
    where id = p_user_id
    returning freeze_credits into v_balance;
-  return v_balance;
+  balance := v_balance; granted := p_quantity; return next;
 end $$;
 
 create or replace function public.consume_freeze_credit(
@@ -199,8 +202,8 @@ Body: JSON `{ session_id: string }`. Called client-side from the success page on
 3. Verify `session.payment_status === "paid"` (400 if not).
 4. Verify `session.metadata.user_id === user.id` (403 if mismatch — defends against another user pasting your session id).
 5. Verify `isFreezeSku(session.metadata.sku)` (400 if not).
-6. Call `grant_freeze_credits` RPC (see §2). Returns the balance after the (idempotent) grant.
-7. Determine `granted` by comparing return value to the pre-call balance (fetch in one RPC instead by extending the return shape if desired; for simplicity the route does a small read-then-RPC). For the demo the route can just always return `granted: quantity` on first call and `granted: 0` on subsequent calls — the client only displays this for UX flavour.
+6. Call `grant_freeze_credits` RPC (see §2). Returns `table(balance int, granted int)` — supabase-js wraps this as `[{ balance, granted }]`. `granted` is `p_quantity` on first call and `0` on idempotent replay; `balance` is always the current credit count.
+7. Read `balance` and `granted` directly from the first row of the RPC result — no separate read needed.
 8. Return `{ ok: true, balance: <new>, granted }`.
 
 The RPC encapsulates atomicity; the route doesn't need to manage transactions manually.
