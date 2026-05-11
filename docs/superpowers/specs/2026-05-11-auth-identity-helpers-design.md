@@ -10,7 +10,7 @@ Eliminate the most-repeated pattern in the codebase: open-coded auth identity ch
 
 ## Outcomes
 
-- 24 auth call sites + 9 `profiles.select` reads collapse to 3 helpers (writes and 3 year-data reads explicitly out of scope)
+- 23 auth call sites + 10 `profiles.select` reads collapse to 3 helpers (writes, 3 year-data reads, and `stripe/checkout/skin/route.ts`'s defensive auth-error handling explicitly out of scope)
 - Every page renders with 1–2 fewer Supabase round-trips per request (request-level dedupe via `react.cache`)
 - Signed-out traffic short-circuits to null with zero Supabase calls
 - `getUser()` vs `getSession()` inconsistency (17/7 arbitrary split) ends — everything is JWT-validated `getUser()`
@@ -96,7 +96,6 @@ Each currently has `const { user } = await ...; if (!user) redirect(...)`. Repla
 
 - `app/achievements/page.tsx` (was `getSession`)
 - `app/profile/page.tsx` (was `getSession`)
-- `app/year/page.tsx` (was `getSession`)
 - `app/account/page.tsx` (was `getUser`) — also reads `sfx_enabled` from `profiles`
 - `app/pro/page.tsx` (was `getUser`) — also reads `is_pro` from `profiles`
 
@@ -108,6 +107,7 @@ Branch on `user` for signed-in features. No behavior change.
 - `app/play/page.tsx`
 - `app/leaderboard/page.tsx`
 - `app/skins/page.tsx`
+- `app/year/page.tsx` (renders signed-in / signed-out variants in-place; does not redirect)
 - `components/auth/UserMenu.tsx`
 
 ### Actions / routes / lib helpers → `getCurrentUser()`
@@ -122,14 +122,15 @@ Actions (6):
 - `app/actions/skins.ts`
 - `app/actions/sync-guest.ts`
 
-Routes (7):
+Routes (6):
 - `app/api/daily/submit/route.ts`
 - `app/api/coach/route.ts`
 - `app/api/seal/freeze/route.ts`
 - `app/api/seal/year/route.ts`
 - `app/api/share/seal/[date]/route.tsx`
 - `app/api/stripe/checkout/route.ts`
-- `app/api/stripe/checkout/skin/route.ts`
+
+**Exception — `app/api/stripe/checkout/skin/route.ts` is NOT migrated.** It explicitly distinguishes auth-system errors (network/AuthApiError) from "no user" by reading `userError` from `getUser()` and returning a 503 in the error case. Collapsing into `getCurrentUser` (which only returns `user | null`) would degrade a 503-temporarily-unavailable into a 302-login-redirect for genuine outages. This is a deliberate carve-out; if we later want to consolidate, the helper would need to expose the auth error.
 
 Lib helpers (2):
 - `lib/sfx/server.ts`
@@ -137,7 +138,7 @@ Lib helpers (2):
 
 ### Profile selects → `getProfile()`
 
-9 in-scope reads of the current user's `profiles` row collapse to one cached call:
+10 in-scope reads of the current user's `profiles` row collapse to one cached call:
 
 - `app/page.tsx:109` (city) → `(await getProfile())?.city ?? null`
 - `app/pro/page.tsx:15` (is_pro) → `await getProfile()`
@@ -146,6 +147,7 @@ Lib helpers (2):
 - `app/account/page.tsx:18` (sfx_enabled) → `await getProfile()`
 - `app/api/coach/route.ts:43` (is_pro) → `await getProfile()`
 - `app/api/daily/submit/route.ts:37` (username, city) → `await getProfile()`
+- `app/api/seal/freeze/route.ts:34` (is_pro, created_at) → `await getProfile()`
 - `lib/sfx/server.ts:12` (sfx_enabled) → `await getProfile()` (the whole function reduces to one line)
 - `lib/skins/viewer.ts:93` (is_pro, active_skin_id) — consumed via the refactored viewer
 
@@ -199,7 +201,7 @@ Added:
 Modified (mechanical migration of auth + in-scope profile reads):
 - Pages: `app/page.tsx`, `app/play/page.tsx`, `app/leaderboard/page.tsx`, `app/leaderboard/LeaderboardPanel.tsx`, `app/skins/page.tsx`, `app/profile/page.tsx`, `app/year/page.tsx`, `app/achievements/page.tsx`, `app/account/page.tsx`, `app/pro/page.tsx`
 - Actions: `app/actions/save-game.ts`, `app/actions/save-city.ts`, `app/actions/save-sfx-preference.ts`, `app/actions/save-username.ts`, `app/actions/skins.ts`, `app/actions/sync-guest.ts`
-- Routes: `app/api/daily/submit/route.ts`, `app/api/coach/route.ts`, `app/api/seal/freeze/route.ts`, `app/api/seal/year/route.ts`, `app/api/share/seal/[date]/route.tsx`, `app/api/stripe/checkout/route.ts`, `app/api/stripe/checkout/skin/route.ts`
+- Routes: `app/api/daily/submit/route.ts`, `app/api/coach/route.ts`, `app/api/seal/freeze/route.ts`, `app/api/seal/year/route.ts`, `app/api/share/seal/[date]/route.tsx`, `app/api/stripe/checkout/route.ts` (skin checkout route deliberately excluded — see Migration § exception)
 - Lib: `lib/sfx/server.ts`, `lib/skins/viewer.ts`
 - Components: `components/auth/UserMenu.tsx`
 
