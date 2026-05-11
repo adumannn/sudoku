@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/identity";
 import {
   isFreezeSku,
@@ -9,7 +9,7 @@ import {
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const { user, sb } = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
