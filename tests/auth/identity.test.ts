@@ -38,6 +38,11 @@ beforeEach(() => {
   getUser.mockReset();
   maybeSingle.mockReset();
   redirect.mockReset();
+  // `from` and `select` carry their `vi.fn()` implementations across tests;
+  // clear call history so `expect(from).not.toHaveBeenCalled()` is independent
+  // of test order. Use mockClear (preserves impl), not mockReset (would erase it).
+  from.mockClear();
+  select.mockClear();
 });
 
 async function importFresh() {

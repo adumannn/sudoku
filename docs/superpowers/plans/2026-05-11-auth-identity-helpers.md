@@ -21,7 +21,7 @@
 **Modified (foundation)**
 - `lib/skins/viewer.ts` — consume `getCurrentUser` + `getProfile` instead of calling Supabase directly
 
-**Modified (page migrations — 10 files)**
+**Modified (page migrations — 11 files)**
 - Bucket 1 (redirects on no-auth → `requireUser`): `app/achievements/page.tsx`, `app/profile/page.tsx`, `app/account/page.tsx`, `app/pro/page.tsx`
 - Bucket 2 (optional auth → `getCurrentUser`): `app/page.tsx`, `app/play/page.tsx`, `app/leaderboard/page.tsx`, `app/leaderboard/LeaderboardPanel.tsx`, `app/skins/page.tsx`, `app/year/page.tsx`, `components/auth/UserMenu.tsx`
 

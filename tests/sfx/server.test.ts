@@ -16,7 +16,9 @@ describe("getSfxEnabledServer", () => {
     mockGetProfile.mockReset();
   });
 
-  it("returns false for anonymous users", async () => {
+  // getProfile returns null for both anonymous users and lookup failures
+  // (the helper swallows errors and returns null), so they share one test.
+  it("returns false when there is no profile (anonymous user or lookup failure)", async () => {
     mockGetProfile.mockResolvedValue(null);
 
     await expect(getSfxEnabledServer()).resolves.toBe(false);
@@ -30,12 +32,6 @@ describe("getSfxEnabledServer", () => {
 
   it("returns false when sfx is disabled", async () => {
     mockGetProfile.mockResolvedValue({ sfx_enabled: false });
-
-    await expect(getSfxEnabledServer()).resolves.toBe(false);
-  });
-
-  it("returns false when the profile lookup fails", async () => {
-    mockGetProfile.mockResolvedValue(null);
 
     await expect(getSfxEnabledServer()).resolves.toBe(false);
   });

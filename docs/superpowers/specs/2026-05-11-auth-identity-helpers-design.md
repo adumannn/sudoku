@@ -6,7 +6,7 @@ Status: design approved; ready for implementation plan.
 
 ## Goal
 
-Eliminate the most-repeated pattern in the codebase: open-coded auth identity checks and `profiles` selects. Introduce two cached helpers (`getCurrentUser`, `getProfile`) plus a page-redirect convenience helper (`requireUser`), migrate all 24 call sites to them, and document the four Supabase client factories.
+Eliminate the most-repeated pattern in the codebase: open-coded auth identity checks and `profiles` selects. Introduce two cached helpers (`getCurrentUser`, `getProfile`) plus a page-redirect convenience helper (`requireUser`), migrate 23 of 24 call sites to them (the `stripe/checkout/skin` route stays direct — see Migration § exception), and document the four Supabase client factories.
 
 ## Outcomes
 
