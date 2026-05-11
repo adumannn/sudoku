@@ -11,8 +11,8 @@ export async function POST(req: Request) {
   }
   const userId = user.id;
 
-  const body = (await req.json()) as { date?: string };
-  if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+  const body = (await req.json().catch(() => null)) as { date?: string } | null;
+  if (!body?.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
     return NextResponse.json({ error: "bad-date" }, { status: 400 });
   }
 
