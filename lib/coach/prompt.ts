@@ -85,6 +85,9 @@ export function fallbackVoice(payload: CoachPayload, kind: CoachKind): string {
     return hint.reason;
   }
   // Nudge: engine reason names cells and digits, so build a generic line.
-  const where = hint.unit.startsWith("cell ") ? "" : ` in ${hint.unit}`;
+  // Case-insensitive guard — defense in depth so a future "Cell …" unit
+  // string can't silently leak the cell name.
+  const isCellUnit = /^\s*cell\b/i.test(hint.unit);
+  const where = isCellUnit ? "" : ` in ${hint.unit}`;
   return `Look for a ${hint.technique}${where}.`;
 }

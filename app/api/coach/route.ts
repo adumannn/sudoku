@@ -97,10 +97,11 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (e) {
-        console.error("[coach] gemini error:", e);
         // Gemini is just the voice layer — the engine already produced a
         // correct hint. Fall back to the engine voice if Gemini failed
         // before we streamed anything; otherwise leave the partial response.
+        const phase = emitted ? "mid-stream" : "before-first-token";
+        console.error(`[coach] gemini error (${phase}):`, e);
         if (!emitted) {
           ctrl.enqueue(encoder.encode(fallbackVoice(payload, kind)));
         }
