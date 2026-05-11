@@ -84,6 +84,11 @@ beforeEach(() => {
   getUser.mockReset();
   maybeSingle.mockReset();
   redirect.mockReset();
+  // `from` and `select` carry their `vi.fn()` implementations across tests;
+  // clear call history so `expect(from).not.toHaveBeenCalled()` is independent
+  // of test order. Use mockClear (preserves impl), not mockReset (would erase it).
+  from.mockClear();
+  select.mockClear();
 });
 
 async function importFresh() {
@@ -127,6 +132,25 @@ describe("getCurrentUser", () => {
     const result = await getCurrentUser();
 
     expect(result.user).toBeNull();
+  });
+
+  it("logs auth.getUser error when present", async () => {
+    cookiesGetAll.mockReturnValue([{ name: "sb-x-auth-token" }]);
+    hasAuthCookie.mockReturnValue(true);
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: "boom" },
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getCurrentUser } = await importFresh();
+    await getCurrentUser();
+
+    expect(errSpy).toHaveBeenCalledWith(
+      "[auth/identity] auth.getUser:",
+      expect.objectContaining({ message: "boom" }),
+    );
+    errSpy.mockRestore();
   });
 });
 
@@ -209,6 +233,26 @@ describe("getProfile", () => {
 
     expect(result).toBeNull();
   });
+
+  it("logs profiles.select error when present", async () => {
+    cookiesGetAll.mockReturnValue([{ name: "sb-x-auth-token" }]);
+    hasAuthCookie.mockReturnValue(true);
+    getUser.mockResolvedValue({
+      data: { user: { id: "u1", email: "a@b.co" } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: null, error: { message: "db down" } });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getProfile } = await importFresh();
+    await getProfile();
+
+    expect(errSpy).toHaveBeenCalledWith(
+      "[auth/identity] profiles.select:",
+      expect.objectContaining({ message: "db down" }),
+    );
+    errSpy.mockRestore();
+  });
 });
 ```
 
@@ -240,7 +284,8 @@ export const getCurrentUser = cache(async (): Promise<Identity> => {
   if (!hasSupabaseAuthCookie(cookies().getAll())) {
     return { user: null, sb };
   }
-  const { data: { user } } = await sb.auth.getUser();
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error) console.error("[auth/identity] auth.getUser:", error);
   return { user, sb };
 });
 
@@ -263,11 +308,12 @@ export interface Profile {
 export const getProfile = cache(async (): Promise<Profile | null> => {
   const { user, sb } = await getCurrentUser();
   if (!user) return null;
-  const { data } = await sb
+  const { data, error } = await sb
     .from("profiles")
     .select("id,city,is_pro,active_skin_id,username,sfx_enabled,created_at")
     .eq("id", user.id)
     .maybeSingle();
+  if (error) console.error("[auth/identity] profiles.select:", error);
   return (data as Profile | null) ?? null;
 });
 ```
@@ -276,7 +322,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
 
 Run: `npx vitest run tests/auth/identity.test.ts`
 
-Expected: all 8 tests pass.
+Expected: all 10 tests pass.
 
 - [ ] **Step 5: Typecheck**
 
