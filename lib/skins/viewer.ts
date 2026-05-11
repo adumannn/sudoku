@@ -65,6 +65,10 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     if (error) console.error(`[skins/viewer] ${where}:`, error);
   };
 
+  // The three calls below are not truly parallel — getProfile() internally
+  // awaits getCurrentUser() and the inner call is deduped by react.cache.
+  // Effectively this is skins || (user → profile). Net cost is one auth
+  // round-trip plus one profile select (plus the cached skins fetch).
   const [{ user, sb }, profile, allSkins] = await Promise.all([
     getCurrentUser(),
     getProfile(),

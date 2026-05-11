@@ -82,6 +82,25 @@ describe("getCurrentUser", () => {
 
     expect(result.user).toBeNull();
   });
+
+  it("logs auth.getUser error when present", async () => {
+    cookiesGetAll.mockReturnValue([{ name: "sb-x-auth-token" }]);
+    hasAuthCookie.mockReturnValue(true);
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: "boom" },
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getCurrentUser } = await importFresh();
+    await getCurrentUser();
+
+    expect(errSpy).toHaveBeenCalledWith(
+      "[auth/identity] auth.getUser:",
+      expect.objectContaining({ message: "boom" }),
+    );
+    errSpy.mockRestore();
+  });
 });
 
 describe("requireUser", () => {
@@ -162,5 +181,25 @@ describe("getProfile", () => {
     const result = await getProfile();
 
     expect(result).toBeNull();
+  });
+
+  it("logs profiles.select error when present", async () => {
+    cookiesGetAll.mockReturnValue([{ name: "sb-x-auth-token" }]);
+    hasAuthCookie.mockReturnValue(true);
+    getUser.mockResolvedValue({
+      data: { user: { id: "u1", email: "a@b.co" } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: null, error: { message: "db down" } });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getProfile } = await importFresh();
+    await getProfile();
+
+    expect(errSpy).toHaveBeenCalledWith(
+      "[auth/identity] profiles.select:",
+      expect.objectContaining({ message: "db down" }),
+    );
+    errSpy.mockRestore();
   });
 });

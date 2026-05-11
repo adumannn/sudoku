@@ -15,7 +15,8 @@ export const getCurrentUser = cache(async (): Promise<Identity> => {
   if (!hasSupabaseAuthCookie(cookies().getAll())) {
     return { user: null, sb };
   }
-  const { data: { user } } = await sb.auth.getUser();
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error) console.error("[auth/identity] auth.getUser:", error);
   return { user, sb };
 });
 
@@ -38,10 +39,11 @@ export interface Profile {
 export const getProfile = cache(async (): Promise<Profile | null> => {
   const { user, sb } = await getCurrentUser();
   if (!user) return null;
-  const { data } = await sb
+  const { data, error } = await sb
     .from("profiles")
     .select("id,city,is_pro,active_skin_id,username,sfx_enabled,created_at")
     .eq("id", user.id)
     .maybeSingle();
+  if (error) console.error("[auth/identity] profiles.select:", error);
   return (data as Profile | null) ?? null;
 });
