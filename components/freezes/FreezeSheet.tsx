@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getFreezeAmountCents } from "@/lib/stripe/freeze-prices";
 
 interface FreezeSheetProps {
   open: boolean;
@@ -54,7 +55,7 @@ export function FreezeSheet({
               className="btn-hako ghost border-bone text-bone w-full justify-between"
             >
               <span>1 freeze</span>
-              <span className="font-jakarta font-light">$1</span>
+              <span className="font-jakarta font-light">${getFreezeAmountCents("freeze_1") / 100}</span>
             </button>
           </form>
           <form action="/api/freezes/checkout" method="POST">
@@ -66,7 +67,7 @@ export function FreezeSheet({
               <span>
                 5 freezes <span className="text-bone/70 text-[11px] mono ml-2">save 40%</span>
               </span>
-              <span className="font-jakarta font-light">$3</span>
+              <span className="font-jakarta font-light">${getFreezeAmountCents("freeze_5") / 100}</span>
             </button>
           </form>
         </div>
