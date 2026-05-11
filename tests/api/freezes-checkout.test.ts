@@ -54,6 +54,13 @@ describe("POST /api/freezes/checkout", () => {
     expect(res.status).toBe(503);
   });
 
+  it("503s when NEXT_PUBLIC_SITE_URL is missing", async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    getCurrentUser.mockResolvedValue({ user: { id: "u1", email: "a@b.co" } });
+    const res = await postForm({ sku: "freeze_1" });
+    expect(res.status).toBe(503);
+  });
+
   it("creates a session and 303s to its URL on the happy path", async () => {
     getCurrentUser.mockResolvedValue({ user: { id: "u1", email: "a@b.co" } });
     sessionsCreate.mockResolvedValue({ url: "https://stripe.test/sess_x", id: "sess_x" });

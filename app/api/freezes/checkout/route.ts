@@ -37,6 +37,11 @@ export async function POST(req: Request) {
     console.error("[freezes/checkout] missing STRIPE_SECRET_KEY");
     return NextResponse.json({ error: "checkout temporarily unavailable" }, { status: 503 });
   }
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!siteUrl) {
+    console.error("[freezes/checkout] missing NEXT_PUBLIC_SITE_URL");
+    return NextResponse.json({ error: "checkout temporarily unavailable" }, { status: 503 });
+  }
   const stripe = new Stripe(stripeSecret);
 
   const quantity = getFreezeQuantity(sku);
@@ -45,8 +50,8 @@ export async function POST(req: Request) {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/freezes/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/freezes/cancel`,
+      success_url: `${siteUrl}/freezes/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/freezes/cancel`,
       ...(user.email ? { customer_email: user.email } : {}),
       metadata: { user_id: user.id, sku, quantity: String(quantity) },
     });
