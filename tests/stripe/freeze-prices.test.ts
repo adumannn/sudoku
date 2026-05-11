@@ -42,6 +42,11 @@ describe("freeze-prices", () => {
     expect(getFreezePriceId("freeze_5")).toBeNull();
   });
 
+  it("returns null when the env var is whitespace-only", () => {
+    process.env.STRIPE_PRICE_ID_FREEZE_1 = "   ";
+    expect(getFreezePriceId("freeze_1")).toBeNull();
+  });
+
   it("returns the bundle quantity", () => {
     expect(getFreezeQuantity("freeze_1")).toBe(1);
     expect(getFreezeQuantity("freeze_5")).toBe(5);

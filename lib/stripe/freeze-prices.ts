@@ -10,7 +10,7 @@ export function isFreezeSku(s: string): s is FreezeSku {
 }
 
 export function getFreezePriceId(s: FreezeSku): string | null {
-  const v = process.env[FREEZE_SKUS[s].priceEnv];
+  const v = process.env[FREEZE_SKUS[s].priceEnv]?.trim();
   return v && v.length > 0 ? v : null;
 }
 
